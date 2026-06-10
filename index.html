@@ -1310,31 +1310,6 @@
       });
     }
 
-    // Procesamiento de la devolución de equipos
-    function devolverComodato(id) {
-      const co = DB_COMODATOS.find(c => c.id === id);
-      if (!co) return;
-
-      openConfirmModal(
-        `¿Deseas registrar la devolución de equipos para el Comodato ${co.id}?`,
-        () => {
-          co.estado = 'Devuelto';
-          
-          // Volver a poner disponibles los equipos asociados
-          co.equipos.forEach(item => {
-            const eq = DB_EQUIPOS.find(e => e.id === item.id);
-            if (eq) {
-              eq.estado = "Disponible";
-            }
-          });
-
-          persistData();
-          showToast("Devolución registrada correctamente", "success");
-          renderAll();
-        }
-      );
-    }
-
     // ================= PANEL 4: CALENDARIO DE OCUPACIÓN =================
     function cambiarMes(dir) {
       calendarDate.setMonth(calendarDate.getMonth() + dir);
@@ -1611,6 +1586,23 @@
           <div class="border-t border-slate-400 pt-2 text-[10px]">
             <p class="font-bold">Firma del Alumno</p>
             <p class="text-slate-500">DNI: ${loan.alumno.dni}</p>
+          </div>
+          <div class="border-t border-slate-400 pt-2 text-[10px]">
+            <p class="font-bold">Por F.I.E.S. / Pañol</p>
+            <p class="text-slate-500">Estudio Audiovisual UAI</p>
+          </div>
+        </div>
+      `;
+
+      paper.innerHTML = contratoCompilado;
+
+      // Configuramos el enlace directo a Google Calendar
+      const gcalBtn = document.getElementById('btn-add-calendar');
+      gcalBtn.href = generateGoogleCalendarURL(loan);
+
+      modal.classList.remove('hidden');
+    }
+
     // Procesamiento de la devolución de equipos
     function devolverComodato(id) {
       const co = DB_COMODATOS.find(c => c.id === id);
