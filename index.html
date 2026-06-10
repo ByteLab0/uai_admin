@@ -18,30 +18,38 @@
     .print-font {
       font-family: 'Merriweather', serif;
     }
-    /* Estilos específicos de impresión para evitar hojas en blanco y ocultar la UI */
+    
+    /* ================= ESTILOS DE IMPRESIÓN PROFESIONALES ================= */
     @media print {
+      @page {
+        size: A4;
+        margin: 0; /* Elimina encabezados del navegador: URLs, fechas, número de página */
+      }
       body {
+        margin: 0 !important;
+        padding: 0 !important;
         background-color: #ffffff !important;
         color: #000000 !important;
       }
-      #app-container {
+      /* Oculta absolutamente todos los elementos en la raíz del body EXCEPTO el área de impresión */
+      body > *:not(#print-area) {
         display: none !important;
       }
+      /* Estructura perfecta del comodato para imprimir en formato A4 limpio */
       #print-area {
         display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 25mm 20mm 20mm 20mm !important; /* Margen estándar de impresión de oficina */
+        box-sizing: border-box !important;
         font-size: 11pt !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
         color: #000000 !important;
         background: transparent !important;
       }
-      .no-print {
-        display: none !important;
-      }
     }
+    
     /* Estilos de ocultación en pantalla normal */
     #print-area {
       display: none;
@@ -542,7 +550,7 @@
         <button onclick="cerrarPreConfirmacion()" class="px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition duration-150 font-medium">
           Editar Datos
         </button>
-        <button onclick="confirmarYEmitirComodato()" class="bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center space-x-1.5 transition duration-150 font-medium">
+        <button onclick="confirmarYEmitirComodato()" class="bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center justify-center space-x-1.5 transition duration-150 font-medium">
           <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
           <span>Confirmar y Emitir</span>
         </button>
@@ -578,7 +586,7 @@
   <script>
     // ================= CONFIGURACIÓN GLOBAL (CAMBIAR AQUÍ) =================
     const GOOGLE_SHEET_ID = "1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY"; // ID del Google Sheets público
-    const GOOGLE_APPS_SCRIPT_URL = "https://docs.google.com/spreadsheets/d/1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY/edit?usp=sharing"; // Tu URL de Google Apps Script para guardar alumnos y reservas
+    const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBiDSzxc7uGNv1nGLYfi7u2HKRWv608slqKxWtDdOaFHbP0PkKq9g9UurtAhLq7kNOtQ/exec"; // Tu URL de Google Apps Script para guardar alumnos y reservas
 
     // Tasa por defecto y tipo de cambio diario
     let variablesFinancieras = {
@@ -656,6 +664,19 @@
       recalculateTotals();
     }
 
+    // Obtiene de forma extremadamente robusta el valor de texto de una celda de Google Sheets
+    function getCellValue(cell) {
+      if (!cell) return "";
+      // Priorizamos cell.f (formatted value) sobre raw cell.v
+      if (cell.f !== undefined && cell.f !== null) {
+        return cell.f.toString().trim();
+      }
+      if (cell.v !== undefined && cell.v !== null) {
+        return cell.v.toString().trim();
+      }
+      return "";
+    }
+
     // Calcula el estado actual en tiempo real de un equipo para el día de hoy
     function getEstadoActualEquipo(eq) {
       if (eq.estado === 'En Taller') return 'En Taller';
@@ -716,10 +737,31 @@
 
     // ================= SERVICIO DE DATOS (GOOGLE SHEETS) =================
     
-    // Forzado manual desde botón de sidebar
+    // Forzado manual desde botón de sidebar e Inventario
     async function forzarSincronizacion() {
       showToast("Estableciendo conexión...", "info");
       await syncAllFromGoogleSheets(true);
+    }
+
+    // Sincroniza alumnos cuidando de no borrar los registros que fueron creados de forma local y aún no impactaron en la planilla
+    function mergeAlumnosState(mappedAlumnos) {
+      if (DB_ALUMNOS.length === 0) return mappedAlumnos;
+      
+      const merged = [...mappedAlumnos];
+      
+      DB_ALUMNOS.forEach(localAl => {
+        const existe = merged.some(m => m.dni.toString().trim() === localAl.dni.toString().trim());
+        if (!existe) {
+          // Si el alumno no existe en la planilla recién descargada, lo guardamos para que no se pierda
+          merged.push(localAl);
+        } else {
+          // Si existe, actualizamos la información por si se modificó desde la hoja de cálculo
+          const index = merged.findIndex(m => m.dni.toString().trim() === localAl.dni.toString().trim());
+          merged[index] = localAl;
+        }
+      });
+      
+      return merged;
     }
 
     // Sincronización transparente
@@ -764,9 +806,9 @@
           console.warn("La pestaña 'DATOS' de alumnos no se pudo leer, creando vacía.", e);
         }
 
-        // Actualización e integración respetando estados de préstamos activos
+        // Actualización e integración respetando estados de préstamos activos y alumnos locales
         DB_EQUIPOS = mergeInventoryState(mappedEquipos);
-        DB_ALUMNOS = mappedAlumnos;
+        DB_ALUMNOS = mergeAlumnosState(mappedAlumnos);
         
         localStorage.setItem('uai_last_sync_time', now.toString());
         document.getElementById('txt-last-sync').innerText = "Sincronizado ahora";
@@ -782,32 +824,36 @@
       }
     }
 
-    // Parsea las filas enviadas por la API Query de Google Sheets
+    // Parsea las filas enviadas por la API Query de Google Sheets usando el robusto método getCellValue
     function parseGoogleSheetRows(data, type) {
       const rows = data.table.rows;
       const parsed = [];
 
       if (type === 'equipos') {
         rows.forEach((row, idx) => {
-          // Ignoramos la cabecera si la primera fila tiene nombres de columna
-          if (idx === 0 && row.c[0]?.v === "Equipo") return;
+          if (!row || !row.c) return;
+          const col0 = getCellValue(row.c[0]);
+          if (idx === 0 && (col0.toLowerCase().includes("equipo") || col0.toLowerCase().includes("nombre"))) return;
           
           parsed.push({
             id: `EQ-${100 + idx}`,
-            nombre: row.c[0]?.v || "Sin Nombre",
-            categoria: row.c[1]?.v || "Accesorios varios",
-            descripcion_detallada: row.c[2]?.v || "Sin detalle en comodato",
-            precio_usd: parseFloat(row.c[3]?.v) || 0,
-            estado: row.c[4]?.v === "En Taller" ? "En Taller" : "Disponible"
+            nombre: col0 || "Sin Nombre",
+            categoria: getCellValue(row.c[1]) || "Accesorios varios",
+            descripcion_detallada: getCellValue(row.c[2]) || "Sin detalle en comodato",
+            precio_usd: parseFloat(getCellValue(row.c[3]).replace(/[^0-9.]/g, "")) || 0,
+            estado: getCellValue(row.c[4]) === "En Taller" ? "En Taller" : "Disponible"
           });
         });
       } else if (type === 'alumnos') {
         rows.forEach((row, idx) => {
-          if (idx === 0 && row.c[0]?.v === "DNI del Alumno") return;
+          if (!row || !row.c) return;
+          const col0 = getCellValue(row.c[0]);
+          if (idx === 0 && (col0.toLowerCase().includes("dni") || col0.toLowerCase().includes("alumno"))) return;
+          
           parsed.push({
-            dni: (row.c[0]?.v || "").toString().trim(),
-            nombre: row.c[1]?.v || "Sin Nombre",
-            domicilio: row.c[2]?.v || "Sin domicilio cargado"
+            dni: col0,
+            nombre: getCellValue(row.c[1]) || "Sin Nombre",
+            domicilio: getCellValue(row.c[2]) || "Sin domicilio cargado"
           });
         });
       }
@@ -830,7 +876,11 @@
 
     // Guarda un alumno nuevo o edita uno existente de manera remota a través del Apps Script
     async function guardarAlumnoEnGoogleSheet(alumno) {
-      if (!GOOGLE_APPS_SCRIPT_URL) return;
+      if (!GOOGLE_APPS_SCRIPT_URL) {
+        // Alerta visible en caso de que el Apps Script no esté configurado en el código
+        showToast("Advertencia: Apps Script no configurado. Alumno guardado de forma local (se subirá cuando vincules tu URL).", "error");
+        return;
+      }
 
       try {
         await fetch(GOOGLE_APPS_SCRIPT_URL, {
@@ -844,8 +894,10 @@
             address: alumno.domicilio
           })
         });
+        showToast("Sincronizando alumno en Google Sheets...", "success");
       } catch (e) {
         console.error("Error escribiendo alumno remoto", e);
+        showToast("Error de conexión. Se guardó localmente.", "error");
       }
     }
 
@@ -1101,6 +1153,7 @@
       renderInventoryPanel();
     }
 
+    // Renderiza el inventario completo leyendo el estado dinámico y categorías estandarizadas
     function renderInventoryPanel() {
       const grid = document.getElementById('inventory-grid');
       grid.innerHTML = '';
@@ -1545,49 +1598,49 @@
       const contratoCompilado = `
         <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           Entre la <strong>Fundación Iberoamericana de Estudios Superiores</strong> (en adelante <strong>F.I.E.S.</strong>) con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra. <strong>${loan.alumno.nombre.toUpperCase()}</strong> con domicilio en <strong>${loan.alumno.domicilio.toUpperCase()}</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>PRIMERA:</strong> La F.I.E.S. entrega en comodato al alumno: <strong>${equiposConcatenados}</strong>, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.---------------------------------------------------------------------------------------
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>SEGUNDA:</strong> Dichos equipos tienen un valor total de u$s <strong>${loan.totalUSD.toLocaleString('es-AR')}</strong>, el cual el alumno declara conocer y aceptar.-------------------------------------------------------------------------------------------------------------------------------- 
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>TERCERA:</strong> El comodato del equipo se realiza por el término de <strong>${loan.horas}</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.------------------------------------------------- 
         </p>
         
-        <p class="mb-4">
-          <strong>CUARTA:</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos ($&nbsp; &nbsp;), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------
+        <p class="mb-4 text-xs">
+          <strong>CUARTA:</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos ($&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>QUINTA:</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>SEXTA:</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------
         </p>
         
-        <p class="mb-4">
+        <p class="mb-4 text-xs">
           <strong>SÉPTIMA:</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------
         </p>
         
-        <p class="mb-8">
+        <p class="mb-8 text-xs">
           En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong>${diaTexto}</strong> días del mes de <strong>${mesTexto}</strong> del 2026.
         </p>
 
         <!-- Bloque de Firmas -->
-        <div class="grid grid-cols-2 gap-12 pt-16 text-center">
-          <div class="border-t border-slate-400 pt-2 text-[10px]">
+        <div class="grid grid-cols-2 gap-12 pt-16 text-center text-xs">
+          <div class="border-t border-slate-400 pt-2">
             <p class="font-bold">Firma del Alumno</p>
             <p class="text-slate-500">DNI: ${loan.alumno.dni}</p>
           </div>
-          <div class="border-t border-slate-400 pt-2 text-[10px]">
+          <div class="border-t border-slate-400 pt-2">
             <p class="font-bold">Por F.I.E.S. / Pañol</p>
             <p class="text-slate-500">Estudio Audiovisual UAI</p>
           </div>
@@ -1649,7 +1702,7 @@
       return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&sf=true&output=xml`;
     }
 
-    // ================= MODAL DE CONFIRMACIÓN CUSTOMIZADO =================
+    // ================= MODAL DE CONFIRMACIÓN =================
     function openConfirmModal(text, onConfirm) {
       document.getElementById('confirm-text').innerText = text;
       document.getElementById('modal-confirm').classList.remove('hidden');
@@ -1693,6 +1746,8 @@
         <span class="${iconColor}">${icon}</span>
         <span class="text-xs font-semibold leading-relaxed">${message}</span>
       `;
+
+      toast.onclick = () => { toast.remove(); };
 
       container.appendChild(toast);
 
