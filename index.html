@@ -145,16 +145,19 @@
                     <i class="fa-solid fa-calendar-days w-5"></i> Agenda & Devoluciones
                 </button>
 
-                <!-- CONECTOR GOOGLE SHEETS -->
+                <!-- STATUS GOOGLE SHEETS AUTOMÁTICO -->
                 <div class="pt-4 mt-4 border-t border-slate-800 space-y-2">
-                    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Carga de Datos Externa</div>
-                    <div class="bg-slate-800/50 rounded-lg p-2.5 space-y-2 border border-slate-800">
-                        <label class="block text-[10px] text-slate-400 font-semibold"><i class="fa-solid fa-table-list mr-1"></i>Google Sheets URL o ID</label>
-                        <input id="config-sheet-url" type="text" placeholder="https://docs.google.com/..." class="w-full bg-slate-900 text-white text-[11px] px-2 py-1.5 rounded border border-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-slate-500">
-                        <button onclick="syncGoogleSheets()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1.5 rounded transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Inventario
-                        </button>
-                        <p class="text-[9px] text-slate-500 leading-normal text-center">La hoja debe ser pública. Columnas obligatorias: Equipo, Categoría, Detalle en Comodato, Valor USD, Estado.</p>
+                    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Sincronización Automática</div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-800 text-[11px] space-y-2">
+                        <div class="flex items-center gap-2 text-slate-300">
+                            <span class="relative flex h-2 w-2">
+                                <span id="sync-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span id="sync-indicator-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span class="font-semibold text-emerald-400" id="sync-status-text">Actualizado</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-normal font-sans" id="sync-last-time">Última: Cargando...</p>
+                        <p class="text-[9px] text-slate-500 leading-normal">Se sincroniza automáticamente cada 24 horas con la planilla del código.</p>
                     </div>
                 </div>
             </nav>
@@ -555,6 +558,13 @@
     </div>
 
     <script>
+        // =========================================================================
+        // CONFIGURACIÓN DE GOOGLE SHEETS: Reemplazá con la URL de tu hoja de cálculo.
+        // Asegurate de que esté compartida como "Cualquier persona con el enlace puede ver".
+        // Columnas obligatorias: Equipo, Categoría, Detalle en Comodato, Valor USD, Estado
+        // =========================================================================
+        const GOOGLE_SHEETS_SOURCE = "https://docs.google.com/spreadsheets/d/1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY/edit?usp=sharing"; 
+
         /* Base de datos inicial precargada persistente en LocalStorage */
         const defaultInventory = [
             { id: "EQ001", name: "Cámara Sony a7III", category: "Cámaras y lentes", usd: 1800, desc: "Cámara Mirrorless Sony a7III Full Frame, incluye lente zoom 28-70mm, 2 baterías, correa original y bolso de transporte.", status: "Disponible" },
@@ -676,15 +686,66 @@
             showToast("Sesión finalizada", "info");
         }
 
-        /* Sincronización con Google Sheets */
-        async function syncGoogleSheets() {
-            let inputUrl = document.getElementById('config-sheet-url').value.trim();
-            if (!inputUrl) {
-                showToast("Por favor, introduce una URL o ID de Google Sheets válida.", "warning");
+        /* Sincronización Automática en Segundo Plano con Google Sheets */
+        async function checkAutoSync() {
+            const statusText = document.getElementById('sync-status-text');
+            const lastTimeText = document.getElementById('sync-last-time');
+            const pingElement = document.getElementById('sync-ping');
+            const dotElement = document.getElementById('sync-indicator-dot');
+
+            if (!GOOGLE_SHEETS_SOURCE || GOOGLE_SHEETS_SOURCE.trim() === "" || GOOGLE_SHEETS_SOURCE.includes("REEMPLAZAR")) {
+                statusText.innerText = "Sin Configurar";
+                statusText.className = "font-semibold text-amber-400 text-xs";
+                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+                if (pingElement) pingElement.classList.add('hidden');
+                lastTimeText.innerText = "Configurá la constante GOOGLE_SHEETS_SOURCE en el código script.";
                 return;
             }
 
-            // Extraer ID del documento de la URL
+            const lastSync = localStorage.getItem('uai_last_sync_time');
+            const now = Date.now();
+            const oneDayMs = 24 * 60 * 60 * 1000; // 24 Horas exactas
+
+            // Ejecutar sincronización si nunca se sincronizó, si pasaron 24hs, o si el inventario local está en cero
+            if (!lastSync || (now - parseInt(lastSync)) > oneDayMs || appData.inventory.length === 0) {
+                statusText.innerText = "Sincronizando...";
+                statusText.className = "font-semibold text-sky-400 animate-pulse text-xs";
+                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-sky-500";
+                if (pingElement) pingElement.classList.remove('hidden');
+
+                const success = await syncGoogleSheetsAuto();
+                if (success) {
+                    localStorage.setItem('uai_last_sync_time', now.toString());
+                    statusText.innerText = "Actualizado";
+                    statusText.className = "font-semibold text-emerald-400 text-xs";
+                    dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                    if (pingElement) pingElement.classList.add('hidden');
+                    lastTimeText.innerText = `Sincronizado ahora`;
+                    showToast("Inventario actualizado automáticamente desde Google Sheets", "success");
+                } else {
+                    statusText.innerText = "Error";
+                    statusText.className = "font-semibold text-rose-400 text-xs";
+                    dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
+                    if (pingElement) pingElement.classList.add('hidden');
+                    lastTimeText.innerText = "Error de conexión o permisos.";
+                }
+            } else {
+                statusText.innerText = "Actualizado";
+                statusText.className = "font-semibold text-emerald-400 text-xs";
+                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                if (pingElement) pingElement.classList.add('hidden');
+                
+                const hoursPassed = Math.round((now - parseInt(lastSync)) / (1000 * 60 * 60));
+                if (hoursPassed === 0) {
+                    lastTimeText.innerText = `Sincronizado hace menos de 1 hora`;
+                } else {
+                    lastTimeText.innerText = `Sincronizado hace ${hoursPassed} hs`;
+                }
+            }
+        }
+
+        async function syncGoogleSheetsAuto() {
+            let inputUrl = GOOGLE_SHEETS_SOURCE.trim();
             let sheetId = inputUrl;
             const urlMatch = inputUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
             if (urlMatch) {
@@ -692,7 +753,6 @@
             }
 
             const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
-            showToast("Buscando datos en Google Sheets...", "info");
 
             try {
                 const response = await fetch(csvUrl);
@@ -700,10 +760,7 @@
                 const text = await response.text();
                 
                 const rows = parseCSV(text);
-                if (rows.length < 2) {
-                    showToast("La hoja de cálculo está vacía o no tiene el formato correcto.", "error");
-                    return;
-                }
+                if (rows.length < 2) return false;
 
                 // Normalizar cabeceras a minúsculas y sin acentos
                 const headers = rows[0].map(h => h.trim().toLowerCase()
@@ -716,8 +773,8 @@
                 const colEstado = headers.indexOf("estado");
 
                 if (colEquipo === -1 || colCategoria === -1 || colDetalle === -1 || colValor === -1 || colEstado === -1) {
-                    showToast("Formato de columnas inválido. Verifique los nombres exactos de las cabeceras.", "error");
-                    return;
+                    console.error("Columnas faltantes en Google Sheets.");
+                    return false;
                 }
 
                 const importedInventory = [];
@@ -741,19 +798,20 @@
                 }
 
                 appData.inventory = importedInventory;
-                appData.config.sheetUrl = inputUrl;
                 saveData();
                 renderInventory();
                 renderDispatchList();
-                showToast(`Sincronización exitosa. Se cargaron ${importedInventory.length} equipos del pañol.`, "success");
+                return true;
 
             } catch (err) {
-                console.error(err);
-                showToast("Error al importar la planilla. Asegúrese de que esté 'Publicada en la Web' o compartida como 'Cualquier persona con el enlace puede leer'.", "error");
+                console.error("Fallo de auto-sincronización con Google Sheets:", err);
+                return false;
             }
         }
 
         // Parseador robusto de CSV para evitar problemas con las comillas y comas internas de los detalles
+        function parseCSV(text) {
+            let lines = [];
         function parseCSV(text) {
             let lines = [];
             let row = [""];
@@ -789,7 +847,6 @@
         function initApp() {
             document.getElementById('config-dollar').value = appData.config.dollarRate;
             document.getElementById('config-tax').value = appData.config.insuranceTax;
-            document.getElementById('config-sheet-url').value = appData.config.sheetUrl || "";
             
             // Inicializar la fecha por defecto de retiro a Hoy (Contexto: 10/06/2026)
             document.getElementById('loan-start-date').value = "2026-06-10";
@@ -800,6 +857,9 @@
             renderLoans();
             drawCalendar();
             updateStats();
+
+            // Sincronización automática silenciosa
+            checkAutoSync();
         }
 
         function syncEquipmentsStatusWithLoans() {
