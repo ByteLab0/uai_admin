@@ -106,35 +106,16 @@
         </button>
       </nav>
 
-      <!-- Panel de Variables Financieras y Sincronización -->
-      <div class="p-4 border-t border-slate-800 bg-slate-950/50 space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Variables Financieras</label>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between bg-slate-900 rounded-md p-2 border border-slate-800">
-              <span class="text-xs text-slate-400">Dólar ($):</span>
-              <input type="number" id="cfg-dolar" value="1050" class="w-20 bg-transparent text-right text-sm text-emerald-400 font-bold focus:outline-none" onchange="guardarVariablesFinancieras()">
-            </div>
-            <div class="flex items-center justify-between bg-slate-900 rounded-md p-2 border border-slate-800">
-              <span class="text-xs text-slate-400">Tasa Seguro:</span>
-              <div class="flex items-center">
-                <input type="number" id="cfg-seguro" value="1.0" step="0.1" class="w-12 bg-transparent text-right text-sm text-amber-400 font-bold focus:outline-none" onchange="guardarVariablesFinancieras()">
-                <span class="text-xs text-slate-400 ml-1">%</span>
-              </div>
-            </div>
+      <!-- Panel de Sincronización Remota (Variables financieras eliminadas) -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/50">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span class="text-xs text-slate-300 font-medium">Google Sheets</span>
           </div>
+          <span class="text-[10px] text-slate-500 uppercase tracking-wide font-semibold">Sincronización Pasiva</span>
         </div>
-
-        <div class="pt-2 border-t border-slate-800/60">
-          <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center space-x-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-              <span class="text-xs text-slate-300 font-medium">Google Sheets</span>
-            </div>
-            <button onclick="forzarSincronizacion()" class="text-[10px] text-red-400 hover:text-red-300 transition underline">Sincronizar ahora</button>
-          </div>
-          <p id="txt-last-sync" class="text-[11px] text-slate-400 italic">Sincronizando...</p>
-        </div>
+        <p id="txt-last-sync" class="text-[11px] text-slate-400 italic">Sincronizando...</p>
       </div>
     </aside>
 
@@ -272,7 +253,7 @@
                   </div>
                 </div>
 
-                <button onclick="emitirComodato()" class="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-red-500/10 transition duration-150 flex items-center justify-center space-x-2">
+                <button onclick="previsualizarComodato()" class="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-red-500/10 transition duration-150 flex items-center justify-center space-x-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                   <span>Emitir e Imprimir Convenio</span>
                 </button>
@@ -304,11 +285,18 @@
               </button>
             </div>
 
-            <div class="relative w-full md:w-80">
-              <input type="text" id="inventory-search" placeholder="Filtrar por nombre..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderInventoryPanel()">
-              <span class="absolute left-3 top-2.5 text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </span>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              <!-- Botón de Sincronización Manual en Inventario -->
+              <button onclick="forzarSincronizacion()" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md transition duration-150 flex items-center space-x-1.5 w-full sm:w-auto justify-center">
+                <span>Actualizar Google Sheets</span>
+              </button>
+
+              <div class="relative w-full md:w-64">
+                <input type="text" id="inventory-search" placeholder="Filtrar por nombre..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderInventoryPanel()">
+                <span class="absolute left-3 top-2.5 text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -455,6 +443,73 @@
     </div>
   </div>
 
+  <!-- ================= MODAL DE PRE-CONFIRMACIÓN DE EMISION ================= -->
+  <div id="modal-pre-confirmacion" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100">
+      <div class="bg-slate-900 text-slate-100 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          <span class="font-bold text-sm uppercase tracking-wide">Previsualización del Préstamo</span>
+        </div>
+        <button onclick="cerrarPreConfirmacion()" class="text-slate-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      
+      <div class="p-6 space-y-4 overflow-y-auto max-h-[60vh] text-sm">
+        <!-- Datos Alumno -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-800 border-b pb-1 mb-2 text-xs uppercase tracking-wider text-slate-500">Datos del Alumno</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div><span class="font-semibold text-slate-600">Nombre:</span> <span id="pre-val-nombre" class="font-bold text-slate-800"></span></div>
+            <div><span class="font-semibold text-slate-600">DNI:</span> <span id="pre-val-dni" class="font-bold text-slate-800"></span></div>
+            <div class="sm:col-span-2"><span class="font-semibold text-slate-600">Domicilio:</span> <span id="pre-val-domicilio" class="font-bold text-slate-800"></span></div>
+          </div>
+        </div>
+
+        <!-- Fechas -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-800 border-b pb-1 mb-2 text-xs uppercase tracking-wider text-slate-500">Fechas de Préstamo</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div><span class="font-semibold text-slate-600">Retiro:</span> <span id="pre-val-retiro" class="font-bold text-slate-800"></span></div>
+            <div><span class="font-semibold text-slate-600">Devolución:</span> <span id="pre-val-devolucion" class="font-bold text-slate-800"></span></div>
+            <div class="sm:col-span-2"><span class="font-semibold text-slate-600">Plazo total:</span> <span id="pre-val-plazo" class="font-bold text-slate-800"></span></div>
+          </div>
+        </div>
+
+        <!-- Equipos -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h4 class="font-bold text-slate-800 border-b pb-1 mb-2 text-xs uppercase tracking-wider text-slate-500">Equipos Solicitados</h4>
+          <ul id="pre-val-equipos-lista" class="space-y-1.5 max-h-36 overflow-y-auto text-xs divide-y divide-slate-100">
+            <!-- Se rellenará dinámicamente -->
+          </ul>
+        </div>
+
+        <!-- Totales -->
+        <div class="grid grid-cols-2 gap-4 text-center pt-2">
+          <div class="bg-slate-900 text-white p-3 rounded-lg">
+            <p class="text-[9px] text-slate-400 uppercase tracking-wide font-semibold">Valor de Reposición</p>
+            <p class="text-base font-bold text-white mt-0.5" id="pre-val-usd"></p>
+          </div>
+          <div class="bg-slate-900 text-white p-3 rounded-lg">
+            <p class="text-[9px] text-emerald-400 uppercase tracking-wide font-semibold">Costo del Seguro</p>
+            <p class="text-base font-bold text-emerald-400 mt-0.5" id="pre-val-ars"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end space-x-3">
+        <button onclick="cerrarPreConfirmacion()" class="px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition duration-150">
+          Editar Datos
+        </button>
+        <button onclick="confirmarYEmitirComodato()" class="bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center space-x-1.5 transition duration-150">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span>Confirmar y Emitir</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL DE CONFIRMACIÓN ================= -->
   <div id="modal-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-100 text-center space-y-4">
@@ -491,6 +546,9 @@
       seguroPercent: 1.0
     };
 
+    // Almacén temporal de transacción de comodato
+    let pendingLoanData = null;
+
     // Bases de datos locales
     let DB_EQUIPOS = [];
     let DB_ALUMNOS = [];
@@ -509,7 +567,7 @@
     // Callbacks del modal de confirmación
     let confirmCallback = null;
 
-    // Ejecución al cargar el documento
+    // Execution on start
     window.onload = async function() {
       cargarVariablesFinancieras();
       setTopbarDate();
@@ -544,22 +602,17 @@
       localStorage.setItem('uai_comodatos', JSON.stringify(DB_COMODATOS));
     }
 
-    // Carga las variables desde localStorage
+    // Carga las variables desde localStorage sin interactuar con elementos DOM eliminados
     function cargarVariablesFinancieras() {
       const vars = JSON.parse(localStorage.getItem('uai_vars'));
       if (vars) {
         variablesFinancieras = vars;
-        document.getElementById('cfg-dolar').value = vars.dolar;
-        document.getElementById('cfg-seguro').value = vars.seguroPercent;
       }
     }
 
     // Guarda las variables en localStorage y actualiza la UI
     function guardarVariablesFinancieras() {
-      variablesFinancieras.dolar = parseFloat(document.getElementById('cfg-dolar').value) || 1050;
-      variablesFinancieras.seguroPercent = parseFloat(document.getElementById('cfg-seguro').value) || 1.0;
       localStorage.setItem('uai_vars', JSON.stringify(variablesFinancieras));
-      showToast("Variables actualizadas con éxito", "success");
       recalculateTotals();
     }
 
@@ -880,8 +933,9 @@
       sumArsEl.innerText = `$ ${totalARS.toLocaleString('es-AR')}`;
     }
 
-    // Emisión formal del comodato
-    async function emitirComodato() {
+    // ================= NUEVO FLUJO DE PRE-CONFIRMACIÓN =================
+    // Abre el modal intermedio de pre-confirmación de despacho
+    function previsualizarComodato() {
       const dni = document.getElementById('loan-dni').value.trim();
       const nombre = document.getElementById('loan-nombre').value.trim();
       const domicilio = document.getElementById('loan-domicilio').value.trim();
@@ -902,43 +956,100 @@
       const dateEnd = new Date(dateStart.getTime());
       dateEnd.setDate(dateStart.getDate() + plazoDias);
 
+      const equiposSeleccionados = [];
+      selectedDispatchIds.forEach(id => {
+        const eq = DB_EQUIPOS.find(e => e.id === id);
+        if (eq) {
+          equiposSeleccionados.push(eq);
+        }
+      });
+
+      const totalUSD = equiposSeleccionados.reduce((acc, eq) => acc + eq.precio_usd, 0);
+      const totalARS = Math.round(totalUSD * (variablesFinancieras.seguroPercent / 100) * variablesFinancieras.dolar);
+      const horasTotales = plazoDias * 24;
+
+      pendingLoanData = {
+        alumno: { dni, nombre, domicilio },
+        equipos: equiposSeleccionados,
+        fechaRetiroISO: dateStart.toISOString(),
+        fechaDevolucionISO: dateEnd.toISOString(),
+        horas: horasTotales,
+        totalUSD: totalUSD,
+        totalARS: totalARS,
+        plazoDias: plazoDias
+      };
+
+      // Cargar campos del Pop Up informativo
+      document.getElementById('pre-val-nombre').innerText = nombre;
+      document.getElementById('pre-val-dni').innerText = dni;
+      document.getElementById('pre-val-domicilio').innerText = domicilio;
+
+      const opcionesFormato = { day: '2-digit', month: '2-digit', year: 'numeric' };
+      document.getElementById('pre-val-retiro').innerText = dateStart.toLocaleDateString('es-AR', opcionesFormato);
+      document.getElementById('pre-val-devolucion').innerText = dateEnd.toLocaleDateString('es-AR', opcionesFormato);
+      document.getElementById('pre-val-plazo').innerText = `${plazoDias} día(s) (${horasTotales} hs)`;
+
+      const listadoEquiposUl = document.getElementById('pre-val-equipos-lista');
+      listadoEquiposUl.innerHTML = '';
+      equiposSeleccionados.forEach(e => {
+        const li = document.createElement('li');
+        li.className = "py-1.5 flex justify-between text-xs";
+        li.innerHTML = `
+          <span class="font-medium text-slate-700">${e.nombre} <span class="text-slate-400 font-mono text-[10px]">(${e.id})</span></span>
+          <span class="font-bold text-slate-600">u$s ${e.precio_usd}</span>
+        `;
+        listadoEquiposUl.appendChild(li);
+      });
+
+      document.getElementById('pre-val-usd').innerText = `u$s ${totalUSD.toLocaleString('es-AR')}`;
+      document.getElementById('pre-val-ars').innerText = `$ ${totalARS.toLocaleString('es-AR')}`;
+
+      // Mostrar modal de confirmación detallado
+      document.getElementById('modal-pre-confirmacion').classList.remove('hidden');
+    }
+
+    function cerrarPreConfirmacion() {
+      document.getElementById('modal-pre-confirmacion').classList.add('hidden');
+      pendingLoanData = null;
+    }
+
+    // Emisión formal definitiva del comodato
+    async function confirmarYEmitirComodato() {
+      if (!pendingLoanData) return;
+
+      const transaccion = pendingLoanData;
+
       // Creamos el registro del alumno local si no existía
-      let alumno = DB_ALUMNOS.find(a => a.dni === dni);
+      let alumno = DB_ALUMNOS.find(a => a.dni === transaccion.alumno.dni);
       if (!alumno) {
-        alumno = { dni, nombre, domicilio };
+        alumno = { ...transaccion.alumno };
         DB_ALUMNOS.push(alumno);
       } else {
-        alumno.nombre = nombre;
-        alumno.domicilio = domicilio;
+        alumno.nombre = transaccion.alumno.nombre;
+        alumno.domicilio = transaccion.alumno.domicilio;
       }
 
       // Guardamos alumnos de forma bidireccional en Google Sheets
       await guardarAlumnoEnGoogleSheet(alumno);
 
       // Actualizamos los estados de los equipos a "Retirado" en el inventario
-      const equiposReservados = [];
-      selectedDispatchIds.forEach(id => {
-        const eq = DB_EQUIPOS.find(e => e.id === id);
+      transaccion.equipos.forEach(eqTrans => {
+        const eq = DB_EQUIPOS.find(e => e.id === eqTrans.id);
         if (eq) {
           eq.estado = "Retirado";
-          equiposReservados.push(eq);
         }
       });
 
       // Creamos el objeto comodato
-      const horasTotales = plazoDias * 24;
-      const totalUSD = equiposReservados.reduce((acc, eq) => acc + eq.precio_usd, 0);
-      const totalARS = Math.round(totalUSD * (variablesFinancieras.seguroPercent / 100) * variablesFinancieras.dolar);
-
       const nuevoComodato = {
         id: `CO-${2600 + DB_COMODATOS.length}`,
         alumno: { ...alumno },
-        equipos: equiposReservados.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd })),
-        fechaRetiroISO: dateStart.toISOString(),
-        fechaDevolucionISO: dateEnd.toISOString(),
-        horas: horasTotales,
-        totalUSD: totalUSD,
-        totalARS: totalARS,
+        equipos: transaccion.equipos.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd })),
+        fechaRetiroISO: transaccion.fechaRetiroISO,
+        fechaDevolucionISO: transaccion.fechaDevolucionISO,
+        horas: transaccion.horas,
+        totalUSD: transaccion.totalUSD,
+        totalARS: transaccion.totalARS,
         estado: 'Activo'
       };
 
@@ -948,9 +1059,17 @@
       persistData();
       showToast("Comodato emitido correctamente", "success");
 
+      // Cerrar Pop Up previo
+      cerrarPreConfirmacion();
+
       // Abrimos el visor del comodato directamente
       abrirVisorComodato(nuevoComodato);
       renderAll();
+    }
+
+    // Función vacía que reemplaza lógica heredada anterior de emisión automática
+    function emitirComodato() {
+      previsualizarComodato();
     }
 
     // ================= PANEL 2: CONTROL DE INVENTARIO =================
