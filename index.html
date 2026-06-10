@@ -1,1532 +1,1428 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UAI - Gestión de Estudio Audiovisual</title>
-    <!-- Tailwind CSS para Estilos Profesionales -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter para UI limpia y Merriweather para el Contrato -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
-    <!-- FontAwesome para Iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        /* Estilos de impresión estrictos para evitar hojas en blanco y bordes innecesarios */
-        @media print {
-            body {
-                background-color: #fff !important;
-                color: #000 !important;
-            }
-            #app-container, #login-screen, .no-print, .modal-backdrop, #add-equip-modal, #view-comodato-modal, #confirm-modal, #toast-container {
-                display: none !important;
-                height: 0 !important;
-                width: 0 !important;
-                overflow: hidden !important;
-                visibility: hidden !important;
-            }
-            #print-area {
-                display: block !important;
-                visibility: visible !important;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                color: #000 !important;
-                background-color: #fff !important;
-                font-family: 'Merriweather', serif;
-                font-size: 11pt;
-                line-height: 1.5;
-                padding: 1cm 1.5cm;
-            }
-            #print-area * {
-                visibility: visible !important;
-            }
-            @page {
-                size: A4;
-                margin: 1.5cm;
-            }
-        }
-        
-        /* Estilos de UI personalizados */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        
-        /* Simulación de hoja de papel para el Visor de Comodatos en pantalla */
-        .paper-sheet {
-            font-family: 'Merriweather', serif;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UAI - Gestión de Estudio Audiovisual</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter (UI) y Merriweather (Estilo académico para el Comodato) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .print-font {
+      font-family: 'Merriweather', serif;
+    }
+    /* Estilos específicos de impresión para evitar hojas en blanco y ocultar la UI */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+      }
+      #app-container {
+        display: none !important;
+      }
+      #print-area {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 11pt !important;
+        line-height: 1.5 !important;
+        color: #000000 !important;
+        background: transparent !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+    /* Estilos de ocultación en pantalla normal */
+    #print-area {
+      display: none;
+    }
+    /* Scrollbar estético */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-    <!-- Toast Notification Container (Flotante) -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none no-print"></div>
-
-    <!-- 1. PANTALLA DE LOGIN -->
-    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-95 p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-slate-100">
-            <div class="text-center mb-8">
-                <div class="inline-flex p-4 bg-indigo-50 text-indigo-600 rounded-full mb-3">
-                    <i class="fa-solid fa-clapperboard text-3xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-900">Estudio Audiovisual UAI</h1>
-                <p class="text-sm text-slate-500 mt-1">Sede Rosario - Gestión de Pañol Administrativo</p>
-            </div>
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <div class="mb-4">
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Usuario Técnico</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fa-solid fa-user"></i>
-                        </span>
-                        <input id="login-user" type="text" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="Nombre de usuario">
-                    </div>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Contraseña</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fa-solid fa-lock"></i>
-                        </span>
-                        <input id="login-pass" type="password" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="••••••••">
-                    </div>
-                </div>
-                <div id="login-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-xs font-medium text-center">
-                    <i class="fa-solid fa-circle-exclamation mr-1"></i> Credenciales inválidas. Intente de nuevo.
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition duration-200 text-sm shadow-md shadow-indigo-200">
-                    Ingresar al Sistema
-                </button>
-            </form>
-            <div class="mt-6 text-center text-xs text-slate-400 border-t border-slate-100 pt-4">
-                UAI Sede Rosario • Clave por defecto: admin / uai2026
-            </div>
+  <!-- ================= APP CONTAINER ================= -->
+  <div id="app-container" class="flex flex-1 overflow-hidden h-screen">
+    
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="w-80 bg-slate-900 text-slate-100 flex flex-col flex-shrink-0 shadow-xl border-r border-slate-800">
+      <!-- Identificación de la Universidad -->
+      <div class="p-6 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="bg-red-600 p-2.5 rounded-lg text-white font-bold text-xl tracking-wider shadow-md">
+            UAI
+          </div>
+          <div>
+            <h1 class="font-bold text-base tracking-wide text-white">Estudio Audiovisual</h1>
+            <p class="text-xs text-slate-400">Rosario - Sede Alumnos</p>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- 2. APLICACIÓN PRINCIPAL -->
-    <div id="app-container" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
+      <!-- Menú de Navegación -->
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <button onclick="switchTab('despacho')" id="btn-tab-despacho" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition duration-150 bg-slate-800 text-white shadow-inner">
+          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+          <span>Emitir / Reservar</span>
+        </button>
+
+        <button onclick="switchTab('inventario')" id="btn-tab-inventario" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition duration-150 text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <span>Inventario & Stock</span>
+        </button>
+
+        <button onclick="switchTab('agenda')" id="btn-tab-agenda" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition duration-150 text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span>Agenda & Devoluciones</span>
+        </button>
+
+        <button onclick="switchTab('calendario')" id="btn-tab-calendario" class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition duration-150 text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>Calendario Mensual</span>
+        </button>
+      </nav>
+
+      <!-- Panel de Variables Financieras y Sincronización -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/50 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Variables Financieras</label>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between bg-slate-900 rounded-md p-2 border border-slate-800">
+              <span class="text-xs text-slate-400">Dólar ($):</span>
+              <input type="number" id="cfg-dolar" value="1050" class="w-20 bg-transparent text-right text-sm text-emerald-400 font-bold focus:outline-none" onchange="guardarVariablesFinancieras()">
+            </div>
+            <div class="flex items-center justify-between bg-slate-900 rounded-md p-2 border border-slate-800">
+              <span class="text-xs text-slate-400">Tasa Seguro:</span>
+              <div class="flex items-center">
+                <input type="number" id="cfg-seguro" value="1.0" step="0.1" class="w-12 bg-transparent text-right text-sm text-amber-400 font-bold focus:outline-none" onchange="guardarVariablesFinancieras()">
+                <span class="text-xs text-slate-400 ml-1">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/60">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span class="text-xs text-slate-300 font-medium">Google Sheets</span>
+            </div>
+            <button onclick="forzarSincronizacion()" class="text-[10px] text-red-400 hover:text-red-300 transition underline">Sincronizar ahora</button>
+          </div>
+          <p id="txt-last-sync" class="text-[11px] text-slate-400 italic">Sincronizando...</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      
+      <!-- TOPBAR -->
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 flex-shrink-0">
+        <div>
+          <h2 id="current-panel-title" class="text-lg font-bold text-slate-800">Estación de Despacho & Reservas</h2>
+        </div>
+        <div class="flex items-center space-x-6">
+          <div class="text-right">
+            <p class="text-xs text-slate-400">Fecha Actual</p>
+            <p id="topbar-date" class="text-sm font-semibold text-slate-700">Cargando...</p>
+          </div>
+          <div class="h-8 w-[1px] bg-slate-200"></div>
+          <div class="flex items-center space-x-3">
+            <div class="bg-red-50 text-red-700 font-semibold px-3 py-1 rounded-full text-xs border border-red-100">
+              UAI Rosario
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR DE PANELES DINÁMICOS -->
+      <div class="flex-1 overflow-y-auto p-8">
         
-        <!-- SIDEBAR DE NAVEGACIÓN -->
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 no-print">
-            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-                <span class="p-2 bg-indigo-600 text-white rounded-lg"><i class="fa-solid fa-film"></i></span>
-                <div>
-                    <h2 class="font-bold text-white text-sm leading-tight">UAI Rosario</h2>
-                    <p class="text-xs text-indigo-400">Estudio Audiovisual</p>
-                </div>
-            </div>
+        <!-- ================= PANEL 1: DESPACHO ================= -->
+        <section id="panel-despacho" class="space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-                <button onclick="switchTab('inventario')" id="btn-inventario" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 bg-indigo-600 text-white">
-                    <i class="fa-solid fa-boxes-stacked w-5"></i> Inventario & Stock
-                </button>
-                <button onclick="switchTab('despacho')" id="btn-despacho" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 hover:bg-slate-800 hover:text-white text-slate-400">
-                    <i class="fa-solid fa-file-invoice w-5"></i> Emitir / Reservar
-                </button>
-                <button onclick="switchTab('agenda')" id="btn-agenda" class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 hover:bg-slate-800 hover:text-white text-slate-400">
-                    <i class="fa-solid fa-calendar-days w-5"></i> Agenda & Devoluciones
-                </button>
-
-                <!-- STATUS GOOGLE SHEETS AUTOMÁTICO -->
-                <div class="pt-4 mt-4 border-t border-slate-800 space-y-2">
-                    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2">Sincronización Automática</div>
-                    <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-800 text-[11px] space-y-2">
-                        <div class="flex items-center gap-2 text-slate-300">
-                            <span class="relative flex h-2 w-2">
-                                <span id="sync-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span id="sync-indicator-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span class="font-semibold text-emerald-400" id="sync-status-text">Actualizado</span>
-                        </div>
-                        <p class="text-[10px] text-slate-400 leading-normal font-sans" id="sync-last-time">Última: Cargando...</p>
-                        <p class="text-[9px] text-slate-500 leading-normal">Se sincroniza automáticamente cada 24 horas con la planilla del código.</p>
-                    </div>
-                </div>
-            </nav>
-
-            <div class="p-4 border-t border-slate-800 space-y-3">
-                <div class="bg-slate-800 rounded-lg p-3">
-                    <div class="text-xs font-semibold text-slate-400 uppercase mb-1">Parámetros de Cálculo</div>
-                    <div class="flex items-center justify-between text-xs text-slate-300 mb-1">
-                        <span>Dólar del día:</span>
-                        <input id="config-dollar" type="number" value="1150" class="w-16 bg-slate-700 text-white text-right px-1 py-0.5 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500" onchange="updateConfig()">
-                    </div>
-                    <div class="flex items-center justify-between text-xs text-slate-300">
-                        <span>Seguro tasa (%):</span>
-                        <input id="config-tax" type="number" step="0.1" value="1.0" class="w-16 bg-slate-700 text-white text-right px-1 py-0.5 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500" onchange="updateConfig()">
-                    </div>
-                </div>
-                <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-950/40 hover:text-red-300 transition duration-150">
-                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-                </button>
-            </div>
-        </aside>
-
-        <!-- PANEL DE CONTENIDO PRINCIPAL -->
-        <main class="flex-1 p-6 md:p-8 overflow-y-auto no-print">
-            
-            <!-- SECCIÓN: INVENTARIO -->
-            <section id="section-inventario" class="space-y-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-900">Control de Inventario</h1>
-                        <p class="text-sm text-slate-500">Administrá las existencias, detalles técnicos y valores de reposición del pañol</p>
-                    </div>
-                    <button onclick="openModal('add-equip-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition duration-150 flex items-center gap-2 shadow-sm shadow-indigo-100">
-                        <i class="fa-solid fa-plus"></i> Nuevo Equipo
-                    </button>
+            <!-- Izquierda: Formulario del Alumno & Fechas -->
+            <div class="lg:col-span-5 space-y-6">
+              <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2 flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  Datos del Alumno
+                </h3>
+                
+                <!-- Búsqueda por DNI con autocompletado -->
+                <div class="relative">
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">DNI del Alumno</label>
+                  <input type="text" id="loan-dni" placeholder="Ingresá DNI para buscar o registrar" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="buscarAlumnoPorDNI()">
+                  <!-- Sugerencias -->
+                  <div id="student-suggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto"></div>
                 </div>
 
-                <!-- Tarjetas de Resumen Rápido -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fa-solid fa-circle-check text-xl"></i></div>
-                        <div>
-                            <p class="text-xs text-slate-400 font-semibold uppercase">Disponibles</p>
-                            <h3 id="stat-available" class="text-xl font-bold text-slate-800">0</h3>
-                        </div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-amber-50 text-amber-600 rounded-lg"><i class="fa-solid fa-box-open text-xl"></i></div>
-                        <div>
-                            <p class="text-xs text-slate-400 font-semibold uppercase">En Préstamo / Reservados</p>
-                            <h3 id="stat-borrowed" class="text-xl font-bold text-slate-800">0</h3>
-                        </div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="p-3 bg-rose-50 text-rose-600 rounded-lg"><i class="fa-solid fa-screwdriver-wrench text-xl"></i></div>
-                        <div>
-                            <p class="text-xs text-slate-400 font-semibold uppercase">En Taller</p>
-                            <h3 id="stat-maintenance" class="text-xl font-bold text-slate-800">0</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabla de Equipamiento con Selección de Categorías -->
-                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-4">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <h2 class="font-bold text-slate-800 text-sm">Lista General de Activos</h2>
-                            <input id="search-inventory" type="text" oninput="renderInventory()" placeholder="Buscar equipo..." class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-64">
-                        </div>
-                        
-                        <!-- PESTAÑAS DE CATEGORÍA (FILTROS) -->
-                        <div class="flex flex-wrap gap-2 border-t border-slate-200/60 pt-3" id="category-tabs-container">
-                            <button onclick="setCategoryFilter('Todos')" id="tab-Todos" class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white transition duration-150 shadow-sm">Todos</button>
-                            <button onclick="setCategoryFilter('Cámaras y lentes')" id="tab-Camaras" class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition duration-150">Cámaras y lentes</button>
-                            <button onclick="setCategoryFilter('Iluminación')" id="tab-Iluminacion" class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition duration-150">Iluminación</button>
-                            <button onclick="setCategoryFilter('Audio')" id="tab-Audio" class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition duration-150">Audio</button>
-                            <button onclick="setCategoryFilter('Accesorios varios')" id="tab-Accesorios" class="category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition duration-150">Accesorios varios</button>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 uppercase font-semibold">
-                                    <th class="py-3.5 px-4">Equipo</th>
-                                    <th class="py-3.5 px-4">Categoría</th>
-                                    <th class="py-3.5 px-4">Detalle en Comodato</th>
-                                    <th class="py-3.5 px-4 text-right">Valor USD</th>
-                                    <th class="py-3.5 px-4 text-center">Estado</th>
-                                    <th class="py-3.5 px-4 text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm">
-                                <!-- Render Dinámico de Productos -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECCIÓN: EMISIÓN DE COMODATOS -->
-            <section id="section-despacho" class="space-y-6 hidden">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Emisión & Agenda Planificada</h1>
-                    <p class="text-sm text-slate-500">Cargá el alumno, seleccioná los días e inyectá fechas futuras para calendarizar reservas</p>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Nombre Completo</label>
+                  <input type="text" id="loan-nombre" placeholder="Nombre y Apellido" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition">
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Formulario de Alumno y Parámetros -->
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="font-bold text-slate-800 border-b border-slate-100 pb-2 text-sm"><i class="fa-solid fa-graduation-cap text-indigo-500 mr-2"></i>Datos del Alumno</h3>
-                            
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">DNI del Alumno</label>
-                                <input id="student-dni" type="text" placeholder="Ej: 42123456" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onblur="autofillStudent()">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Nombre Completo</label>
-                                <input id="student-name" type="text" placeholder="Ej: Juan Pérez" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Domicilio Legal</label>
-                                <input id="student-address" type="text" placeholder="Ej: Pellegrini 1950, Rosario" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="font-bold text-slate-800 border-b border-slate-100 pb-2 text-sm"><i class="fa-solid fa-clock text-indigo-500 mr-2"></i>Plazo y Planificación</h3>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha de Retiro / Reserva</label>
-                                <input id="loan-start-date" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="renderDispatchList(); updateLoanSummary();">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-500 mb-1">Duración del Préstamo</label>
-                                <select id="loan-days" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onchange="renderDispatchList(); updateLoanSummary();">
-                                    <option value="1">1 día completo (24 horas)</option>
-                                    <option value="2">2 días completos (48 horas)</option>
-                                    <option value="3">3 días completos (72 horas)</option>
-                                    <option value="7">1 semana (168 horas)</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Selección de Equipos en Stock y Resumen Financiero -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-camera-retro text-indigo-500 mr-2"></i>Disponibilidad para las Fechas Seleccionadas</h3>
-                                <div class="text-[11px] text-slate-500" id="selected-period-label">Periodo: -</div>
-                            </div>
-                            <!-- Listado rápido con checkboxes -->
-                            <div class="p-4 max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100" id="dispatch-equip-list">
-                                <!-- Render Dinámico de Checkboxes con estado de reserva -->
-                            </div>
-                        </div>
-
-                        <!-- Resumen del Cálculo Automático -->
-                        <div class="bg-indigo-950 text-white rounded-xl p-6 shadow-md flex flex-col sm:flex-row justify-between items-center gap-6">
-                            <div class="space-y-2 text-center sm:text-left">
-                                <p class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Costo Consolidado Estimado</p>
-                                <div class="flex items-baseline gap-2 justify-center sm:justify-start">
-                                    <span class="text-3xl font-extrabold" id="calc-usd-sum">u$s 0</span>
-                                    <span class="text-sm text-indigo-200">En Garantía</span>
-                                </div>
-                                <p class="text-xs text-indigo-200">
-                                    Seguro Estimado (Cláusula 4º): <span class="font-bold text-emerald-400" id="calc-ars-insurance">$0 ARS</span>
-                                </p>
-                            </div>
-                            <button onclick="processLoan()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg text-sm transition duration-150 flex items-center gap-2 shadow-lg shadow-emerald-950/20 w-full sm:w-auto justify-center">
-                                <i class="fa-solid fa-print"></i> Guardar Reserva e Imprimir
-                            </button>
-                        </div>
-                    </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Domicilio Legal</label>
+                  <input type="text" id="loan-domicilio" placeholder="Calle, Número, Piso, Depto." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition">
                 </div>
-            </section>
+              </div>
 
-            <!-- SECCIÓN: AGENDA Y DEVOLUCIONES -->
-            <section id="section-agenda" class="space-y-6 hidden">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-900">Agenda & Retiros Activos</h1>
-                        <p class="text-sm text-slate-500">Monitoreá los contratos vigentes, rangos de posesión y procesá devoluciones directas</p>
-                    </div>
-                </div>
+              <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide border-b pb-2 flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  Período del Préstamo
+                </h3>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Vista de Lista de Préstamos Activos -->
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                                <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-folder-open text-indigo-500 mr-2"></i>Préstamos en Posesión Activa</h3>
-                                <span class="text-xs bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full" id="active-loans-counter">0 Activos</span>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr class="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 uppercase font-semibold">
-                                            <th class="py-3 px-4">Alumno (DNI)</th>
-                                            <th class="py-3 px-4">Equipos</th>
-                                            <th class="py-3 px-4">Rango del Préstamo</th>
-                                            <th class="py-3 px-4 text-center font-bold">Plazo</th>
-                                            <th class="py-3 px-4 text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="loans-table-body" class="divide-y divide-slate-100 text-xs">
-                                        <!-- Render Dinámico de Comodatos Vigentes -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Calendario Mensual de Reservas Dinámico -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                                <button onclick="navigateMonth(-1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
-                                <h3 class="font-bold text-slate-800 text-sm text-center font-sans" id="calendar-month-year">Junio 2026</h3>
-                                <button onclick="navigateMonth(1)" class="p-1.5 hover:bg-slate-100 rounded text-slate-600 transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
-                            </div>
-                            
-                            <!-- Grilla de Calendario Dinámica -->
-                            <div id="dynamic-calendar" class="grid grid-cols-7 gap-1 text-center text-xs">
-                                <!-- Se rellena por Javascript -->
-                            </div>
-                            
-                            <div class="text-xs text-slate-500 pt-3 border-t border-slate-100 space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-block w-3.5 h-3.5 bg-indigo-600 rounded"></span> 
-                                    <span>Fecha de Hoy</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-block w-3.5 h-3.5 bg-amber-100 border border-amber-300 rounded"></span> 
-                                    <span>Equipos en posesión del Alumno en esta fecha</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- 3. MODAL: AGREGAR / EDITAR EQUIPAMIENTO -->
-    <div id="add-equip-modal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100">
-            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
-                <h3 class="font-bold text-base" id="modal-title">Registrar Nuevo Activo</h3>
-                <button onclick="closeModal('add-equip-modal')" class="text-slate-400 hover:text-white transition duration-150"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form id="equip-form" onsubmit="saveEquipment(event)" class="p-6 space-y-4">
-                <input type="hidden" id="equip-id">
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Nombre Comercial del Equipo</label>
-                        <input id="form-equip-name" type="text" required placeholder="Ej: Sony FX3 Cinema Camera" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Categoría</label>
-                        <select id="form-equip-category" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="Cámaras y lentes">Cámaras y lentes</option>
-                            <option value="Iluminación">Iluminación</option>
-                            <option value="Audio">Audio</option>
-                            <option value="Accesorios varios">Accesorios varios</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Valor Unitario (u$s)</label>
-                        <input id="form-equip-usd" type="number" required placeholder="Ej: 3500" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha de Retiro</label>
+                    <input type="date" id="loan-fecha-retiro" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" onchange="calcularFechasPrestamo()">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Plazo de Entrega</label>
+                    <select id="loan-plazo-dias" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" onchange="calcularFechasPrestamo()">
+                      <option value="1">1 día (24 hs)</option>
+                      <option value="2" selected>2 días (48 hs)</option>
+                      <option value="3">3 días (72 hs)</option>
+                      <option value="4">4 días (96 hs)</option>
+                      <option value="5">5 días (120 hs)</option>
+                      <option value="7">1 semana (168 hs)</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Descripción Detallada (Aparecerá en el Comodato Legal)</label>
-                    <textarea id="form-equip-desc" required rows="3" placeholder="Ej: Sensor Full-Frame, incluye strap, Jaula SmallRig, 2 baterías NP-FZ100, cargador dual y zapata rápida para trípode." class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-                </div>
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="closeModal('add-equip-modal')" class="border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-sm transition duration-150 font-medium font-sans">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition duration-150 font-medium font-sans shadow-sm shadow-indigo-100">Guardar Datos</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- 4. MODAL: VISOR DE COMODATO ("VER COMODATO") EN PANTALLA -->
-    <div id="view-comodato-modal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 hidden no-print">
-        <div class="bg-slate-100 rounded-2xl max-w-4xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <!-- Barra superior del modal -->
-            <div class="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
-                <div class="flex items-center gap-2">
-                    <span class="text-indigo-400"><i class="fa-solid fa-file-contract"></i></span>
-                    <h3 class="font-bold text-sm">Visor de Comodato - Universidad Abierta Interamericana</h3>
+                <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center justify-between">
+                  <span class="text-xs text-slate-500 font-medium">Devolución Pactada:</span>
+                  <span id="txt-devolucion-calculada" class="text-xs font-bold text-slate-700">--/--/----</span>
                 </div>
-                <button onclick="closeModal('view-comodato-modal')" class="text-slate-400 hover:text-white transition duration-150"><i class="fa-solid fa-xmark text-lg"></i></button>
+              </div>
             </div>
+
+            <!-- Derecha: Inventario disponible con Filtros e Items Seleccionados -->
+            <div class="lg:col-span-7 flex flex-col space-y-6">
+              
+              <!-- Buscador y Filtros -->
+              <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <div class="flex-1 relative">
+                    <input type="text" id="dispatch-search" placeholder="Buscar equipo por nombre o modelo..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderDispatchInventory()">
+                    <span class="absolute left-3 top-2.5 text-slate-400">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                  </div>
+                  <select id="dispatch-category-filter" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" onchange="renderDispatchInventory()">
+                    <option value="Todos">Todas las Categorías</option>
+                    <option value="Cámaras y lentes">Cámaras y lentes</option>
+                    <option value="Iluminación">Iluminación</option>
+                    <option value="Audio">Audio</option>
+                    <option value="Accesorios varios">Accesorios varios</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Listado de Equipos del Inventario -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[300px]">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
+                  <span class="text-xs font-bold text-slate-500 uppercase">Equipos en Stock</span>
+                  <span id="dispatch-selected-count" class="text-xs font-medium bg-red-100 text-red-800 px-2.5 py-0.5 rounded-full">0 seleccionados</span>
+                </div>
+                
+                <div id="dispatch-items-container" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto">
+                  <!-- Renderizado dinámico -->
+                </div>
+              </div>
+
+              <!-- Resumen del Comodato & Botón de Acción -->
+              <div class="bg-slate-900 text-slate-100 p-6 rounded-xl border border-slate-800 shadow-lg space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-center">
+                  <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-800">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-medium">Cláusula SEGUNDA (Valor USD)</p>
+                    <p class="text-xl font-bold text-white mt-1" id="sum-usd">u$s 0</p>
+                  </div>
+                  <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-800">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-medium">Cláusula CUARTA (Seguro ARS)</p>
+                    <p class="text-xl font-bold text-emerald-400 mt-1" id="sum-ars">$ 0</p>
+                  </div>
+                </div>
+
+                <button onclick="emitirComodato()" class="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-red-500/10 transition duration-150 flex items-center justify-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                  <span>Emitir e Imprimir Convenio</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= PANEL 2: INVENTARIO ================= -->
+        <section id="panel-inventario" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <!-- Pestañas de categoría -->
+            <div class="flex flex-wrap gap-2" id="inv-tabs">
+              <button onclick="filterInventoryCategory('Todos')" id="tab-inv-Todos" class="px-4 py-2 rounded-lg text-sm font-semibold transition bg-red-50 text-red-700 border border-red-100">
+                Todos
+              </button>
+              <button onclick="filterInventoryCategory('Cámaras y lentes')" id="tab-inv-Camaras" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                Cámaras y Lentes
+              </button>
+              <button onclick="filterInventoryCategory('Iluminación')" id="tab-inv-Iluminacion" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                Iluminación
+              </button>
+              <button onclick="filterInventoryCategory('Audio')" id="tab-inv-Audio" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                Audio
+              </button>
+              <button onclick="filterInventoryCategory('Accesorios varios')" id="tab-inv-Accesorios" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                Accesorios Varios
+              </button>
+            </div>
+
+            <div class="relative w-full md:w-80">
+              <input type="text" id="inventory-search" placeholder="Filtrar por nombre..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderInventoryPanel()">
+              <span class="absolute left-3 top-2.5 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- Grid de Inventario -->
+          <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Renderizado dinámico -->
+          </div>
+        </section>
+
+        <!-- ================= PANEL 3: AGENDA ================= -->
+        <section id="panel-agenda" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex gap-2">
+              <button onclick="filterAgenda('Todos')" id="tab-agenda-Todos" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white">Todos</button>
+              <button onclick="filterAgenda('Activos')" id="tab-agenda-Activos" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">Vigentes (En Curso)</button>
+              <button onclick="filterAgenda('Pendientes')" id="tab-agenda-Pendientes" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">Reservas Futuras</button>
+              <button onclick="filterAgenda('Devueltos')" id="tab-agenda-Devueltos" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100">Devueltos</button>
+            </div>
+            <div class="text-xs text-slate-400 italic" id="agenda-count">Mostrando 0 registros</div>
+          </div>
+
+          <!-- Tabla de agenda -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 font-bold text-[11px] uppercase tracking-wider border-b border-slate-100">
+                    <th class="py-4 px-6">ID / Alumno</th>
+                    <th class="py-4 px-6">Equipos Retirados</th>
+                    <th class="py-4 px-6">Rango de Préstamo</th>
+                    <th class="py-4 px-6">Garantía / Seguro</th>
+                    <th class="py-4 px-6 text-center">Estado</th>
+                    <th class="py-4 px-6 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="agenda-tbody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                  <!-- Renderizado dinámico -->
+                </tbody>
+              </table>
+            </div>
+            <div id="agenda-empty" class="hidden p-12 text-center text-slate-400">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              No se encontraron registros en la agenda para el filtro seleccionado.
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= PANEL 4: CALENDARIO ================= -->
+        <section id="panel-calendario" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Contenedor con scroll para ver el papel -->
-            <div class="flex-1 p-6 md:p-10 overflow-y-auto custom-scrollbar flex justify-center bg-slate-200">
-                <div class="bg-white paper-sheet p-8 md:p-12 max-w-[21cm] w-full text-black text-xs leading-relaxed border border-slate-300 rounded shadow-md relative">
-                    <!-- Sello de Agua / Logo de fondo simulado -->
-                    <div class="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
-                        <i class="fa-solid fa-graduation-cap text-[250px]"></i>
-                    </div>
-                    
-                    <!-- Contenido dinámico del comodato -->
-                    <div id="visor-content">
-                        <!-- Se renderiza mediante javascript -->
-                    </div>
+            <!-- Calendario Mensual -->
+            <div class="lg:col-span-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  Grilla de Ocupación
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <button onclick="cambiarMes(-1)" class="p-1.5 rounded-lg border hover:bg-slate-50 text-slate-600 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                  </button>
+                  <span id="calendar-month-year" class="text-sm font-semibold text-slate-700 min-w-[120px] text-center">Junio 2026</span>
+                  <button onclick="cambiarMes(1)" class="p-1.5 rounded-lg border hover:bg-slate-50 text-slate-600 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                  </button>
                 </div>
+              </div>
+
+              <!-- Días de la semana -->
+              <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div>Dom</div>
+                <div>Lun</div>
+                <div>Mar</div>
+                <div>Mié</div>
+                <div>Jue</div>
+                <div>Vie</div>
+                <div>Sáb</div>
+              </div>
+
+              <!-- Días del Calendario -->
+              <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                <!-- Renderizado dinámico -->
+              </div>
             </div>
-            
-            <!-- Botonera inferior del visor -->
-            <div class="bg-white border-t border-slate-200 p-4 flex justify-between items-center shrink-0">
-                <span class="text-xs text-slate-500 font-medium"><i class="fa-solid fa-circle-info mr-1 text-slate-400"></i> Se imprimirá en hoja tamaño A4 de manera automática</span>
-                <div class="flex gap-2">
-                    <button onclick="closeModal('view-comodato-modal')" class="border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold transition">
-                        Cerrar Visor
-                    </button>
-                    <button id="btn-print-from-modal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm shadow-indigo-100 transition">
-                        <i class="fa-solid fa-print"></i> Mandar a Imprimir
-                    </button>
+
+            <!-- Panel de Detalle del Día Seleccionado -->
+            <div class="lg:col-span-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-[300px]">
+              <div class="border-b pb-3 mb-4">
+                <p class="text-xs text-slate-400 font-semibold uppercase">Reservas del Día</p>
+                <h4 id="calendar-detail-date" class="text-sm font-bold text-slate-800 mt-0.5">Seleccioná un día del calendario</h4>
+              </div>
+              
+              <div id="calendar-detail-list" class="flex-1 space-y-3 overflow-y-auto max-h-[320px]">
+                <div class="text-slate-400 text-xs text-center py-12">
+                  Haz clic en cualquier día marcado para ver los equipos comprometidos.
                 </div>
+              </div>
             </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= VISOR MODAL DEL COMODATO DIGITAL ================= -->
+  <div id="modal-comodato" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-100">
+      <div class="bg-slate-900 text-slate-100 px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span class="font-bold text-sm uppercase tracking-wide">Vista Previa del Convenio</span>
         </div>
+        <button onclick="cerrarVisorComodato()" class="text-slate-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo del Contrato (Visualización fiel de papel A4) -->
+      <div class="flex-1 overflow-y-auto p-8 bg-slate-100">
+        <div class="bg-white shadow-md rounded-lg max-w-2xl mx-auto p-12 print-font text-xs text-justify text-slate-800 leading-relaxed border border-slate-200" id="modal-paper-content">
+          <!-- El texto final del contrato se vuelca aquí de forma fiel -->
+        </div>
+      </div>
+
+      <!-- Acciones de Pie del Modal -->
+      <div class="bg-slate-50 border-t border-slate-200 px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <a id="btn-add-calendar" target="_blank" href="#" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span>Añadir a Google Calendar</span>
+        </a>
+        <div class="flex space-x-3 w-full sm:w-auto">
+          <button onclick="cerrarVisorComodato()" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition duration-150">
+            Cerrar
+          </button>
+          <button onclick="imprimirComodatoDesdeModal()" class="w-1/2 sm:w-auto bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center justify-center space-x-1.5 transition duration-150">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            <span>Imprimir A4</span>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- 5. MODAL DE CONFIRMACIÓN PERSONALIZADO (Cero prompts nativos) -->
-    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 hidden no-print">
-        <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-4">
-            <div class="flex items-center gap-3 text-indigo-600">
-                <div class="p-3 bg-indigo-50 rounded-full">
-                    <i class="fa-solid fa-circle-question text-2xl"></i>
-                </div>
-                <h3 class="font-bold text-lg text-slate-900" id="confirm-title">¿Proceder con la acción?</h3>
-            </div>
-            <p class="text-sm text-slate-500" id="confirm-message">Por favor verifique los datos antes de continuar.</p>
-            <div class="flex justify-end gap-3 pt-2">
-                <button id="confirm-cancel-btn" class="border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-xs font-semibold transition duration-150">Cancelar</button>
-                <button id="confirm-ok-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition duration-150 shadow-sm shadow-indigo-100">Confirmar</button>
-            </div>
-        </div>
+  <!-- ================= MODAL DE CONFIRMACIÓN ================= -->
+  <div id="modal-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-100 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto border border-amber-100">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+      <div>
+        <h4 id="confirm-title" class="font-bold text-slate-800 text-base">¿Estás seguro?</h4>
+        <p id="confirm-text" class="text-xs text-slate-500 mt-1">Esta acción modificará la disponibilidad en la base de datos.</p>
+      </div>
+      <div class="flex space-x-3 pt-2">
+        <button onclick="closeConfirmModal(false)" class="w-1/2 border px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">Cancelar</button>
+        <button id="btn-confirm-yes" class="w-1/2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md transition">Confirmar</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 6. ÁREA EXCLUSIVA DE IMPRESIÓN (COMODATO OFICIAL F.I.E.S. / UAI) -->
-    <div id="print-area" class="hidden">
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 25px;">
-            <h2 style="font-size: 15pt; font-weight: bold; margin: 0; letter-spacing: 1px; font-family: 'Merriweather', serif;">CONVENIO DE RECEPCIÓN Y DEPÓSITO</h2>
-            <p style="font-size: 8.5pt; margin: 5px 0 0; text-transform: uppercase; font-family: 'Merriweather', serif;">Estudio Audiovisual - Fundación Iberoamericana de Estudios Superiores</p>
-        </div>
+  <!-- ================= PILA DE TOAST NOTIFICATIONS ================= -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none"></div>
 
-        <p style="text-align: justify; margin-bottom: 18px;">
-            Entre la <strong>Fundación Iberoamericana de Estudios Superiores (en adelante F.I.E.S.)</strong> con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra <strong id="print-alumno-nombre">_______________________</strong> con domicilio en <strong id="print-alumno-domicilio">_______________________</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:
+  <!-- ================= ÁREA DE IMPRESIÓN LIMPIA (A4) ================= -->
+  <div id="print-area" class="print-font text-xs text-justify text-slate-900 leading-relaxed max-w-2xl mx-auto p-12"></div>
+
+
+  <!-- ================= LÓGICA DE PROGRAMACIÓN ================= -->
+  <script>
+    // ================= CONFIGURACIÓN GLOBAL (CAMBIAR AQUÍ) =================
+    const GOOGLE_SHEET_ID = "1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY"; // ID del Google Sheets público
+    const GOOGLE_APPS_SCRIPT_URL = "https://docs.google.com/spreadsheets/d/1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY/edit?usp=sharing"; // Tu URL de Google Apps Script para guardar alumnos y reservas
+
+    // Tasa por defecto y tipo de cambio diario
+    let variablesFinancieras = {
+      dolar: 1050,
+      seguroPercent: 1.0
+    };
+
+    // Bases de datos locales
+    let DB_EQUIPOS = [];
+    let DB_ALUMNOS = [];
+    let DB_COMODATOS = [];
+
+    // Selección de despacho persistente
+    let selectedDispatchIds = [];
+
+    // Navegación de mes del calendario
+    let calendarDate = new Date(2026, 5, 10); // Junio de 2026
+
+    // Filtros activos
+    let activeInventoryCategory = 'Todos';
+    let activeAgendaFilter = 'Todos';
+
+    // Callbacks del modal de confirmación
+    let confirmCallback = null;
+
+    // Ejecución al cargar el documento
+    window.onload = async function() {
+      cargarVariablesFinancieras();
+      setTopbarDate();
+      document.getElementById('loan-fecha-retiro').valueAsDate = new Date();
+      calcularFechasPrestamo();
+
+      // Cargar base de datos local y sincronizar de Google Sheets si corresponde
+      inicializarBaseDatos();
+      await syncAllFromGoogleSheets(false); // Sincroniza si pasaron 24hs o está vacío
+
+      // Renderizados iniciales
+      renderAll();
+    };
+
+    // Configura la fecha en la barra superior
+    function setTopbarDate() {
+      const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('topbar-date').innerText = new Date().toLocaleDateString('es-AR', opciones);
+    }
+
+    // Inicializa la base de datos de localStorage
+    function inicializarBaseDatos() {
+      DB_EQUIPOS = JSON.parse(localStorage.getItem('uai_equipos')) || [];
+      DB_ALUMNOS = JSON.parse(localStorage.getItem('uai_alumnos')) || [];
+      DB_COMODATOS = JSON.parse(localStorage.getItem('uai_comodatos')) || [];
+    }
+
+    // Guarda los datos en localStorage
+    function persistData() {
+      localStorage.setItem('uai_equipos', JSON.stringify(DB_EQUIPOS));
+      localStorage.setItem('uai_alumnos', JSON.stringify(DB_ALUMNOS));
+      localStorage.setItem('uai_comodatos', JSON.stringify(DB_COMODATOS));
+    }
+
+    // Carga las variables desde localStorage
+    function cargarVariablesFinancieras() {
+      const vars = JSON.parse(localStorage.getItem('uai_vars'));
+      if (vars) {
+        variablesFinancieras = vars;
+        document.getElementById('cfg-dolar').value = vars.dolar;
+        document.getElementById('cfg-seguro').value = vars.seguroPercent;
+      }
+    }
+
+    // Guarda las variables en localStorage y actualiza la UI
+    function guardarVariablesFinancieras() {
+      variablesFinancieras.dolar = parseFloat(document.getElementById('cfg-dolar').value) || 1050;
+      variablesFinancieras.seguroPercent = parseFloat(document.getElementById('cfg-seguro').value) || 1.0;
+      localStorage.setItem('uai_vars', JSON.stringify(variablesFinancieras));
+      showToast("Variables actualizadas con éxito", "success");
+      recalculateTotals();
+    }
+
+    // ================= SERVICIO DE DATOS (GOOGLE SHEETS) =================
+    
+    // Forzado manual desde botón de sidebar
+    async function forzarSincronizacion() {
+      showToast("Estableciendo conexión...", "info");
+      await syncAllFromGoogleSheets(true);
+    }
+
+    // Sincronización transparente
+    async function syncAllFromGoogleSheets(force = false) {
+      const lastSync = localStorage.getItem('uai_last_sync_time');
+      const now = Date.now();
+      const interval24hs = 24 * 60 * 60 * 1000;
+
+      // Si no es forzado y no pasaron 24 horas y tenemos datos, ignoramos fetch
+      if (!force && lastSync && (now - Number(lastSync) < interval24hs) && DB_EQUIPOS.length > 0) {
+        const diffHrs = Math.round((now - Number(lastSync)) / (60 * 60 * 1000));
+        document.getElementById('txt-last-sync').innerText = `Sincronizado hace ${diffHrs} hs`;
+        return;
+      }
+
+      if (!GOOGLE_SHEET_ID) {
+        document.getElementById('txt-last-sync').innerText = "ID de Sheet no configurado";
+        showToast("Error: Google Sheet ID no definido en el código", "error");
+        return;
+      }
+
+      document.getElementById('txt-last-sync').innerText = "Descargando datos...";
+
+      try {
+        // 1. Descarga de Equipos desde pestaña "EQUIPOS"
+        const responseEquipos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json&sheet=EQUIPOS`);
+        const textEquipos = await responseEquipos.text();
+        const jsonStringEquipos = textEquipos.substring(textEquipos.indexOf('{'), textEquipos.lastIndexOf('}') + 1);
+        const dataEquipos = JSON.parse(jsonStringEquipos);
+        
+        const mappedEquipos = parseGoogleSheetRows(dataEquipos, 'equipos');
+
+        // 2. Descarga de Alumnos desde pestaña "DATOS"
+        let mappedAlumnos = [];
+        try {
+          const responseAlumnos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json&sheet=DATOS`);
+          const textAlumnos = await responseAlumnos.text();
+          const jsonStringAlumnos = textAlumnos.substring(textAlumnos.indexOf('{'), textAlumnos.lastIndexOf('}') + 1);
+          const dataAlumnos = JSON.parse(jsonStringAlumnos);
+          mappedAlumnos = parseGoogleSheetRows(dataAlumnos, 'alumnos');
+        } catch (e) {
+          console.warn("La pestaña 'DATOS' de alumnos no se pudo leer, creando vacía.", e);
+        }
+
+        // Actualización e integración respetando estados de préstamos activos
+        DB_EQUIPOS = mergeInventoryState(mappedEquipos);
+        DB_ALUMNOS = mappedAlumnos;
+        
+        localStorage.setItem('uai_last_sync_time', now.toString());
+        document.getElementById('txt-last-sync').innerText = "Sincronizado ahora";
+        showToast("Inventario actualizado desde la nube", "success");
+        
+        persistData();
+        renderAll();
+
+      } catch (err) {
+        console.error("Error sincronizando", err);
+        document.getElementById('txt-last-sync').innerText = "Error en la sincronización";
+        showToast("No se pudo conectar con Google Sheets", "error");
+      }
+    }
+
+    // Parsea las filas enviadas por la API Query de Google Sheets
+    function parseGoogleSheetRows(data, type) {
+      const rows = data.table.rows;
+      const parsed = [];
+
+      if (type === 'equipos') {
+        rows.forEach((row, idx) => {
+          // Ignoramos la cabecera si la primera fila tiene nombres de columna
+          if (idx === 0 && row.c[0]?.v === "Equipo") return;
+          
+          parsed.push({
+            id: `EQ-${100 + idx}`,
+            nombre: row.c[0]?.v || "Sin Nombre",
+            categoria: row.c[1]?.v || "Accesorios varios",
+            descripcion_detallada: row.c[2]?.v || "Sin detalle en comodato",
+            precio_usd: parseFloat(row.c[3]?.v) || 0,
+            estado: row.c[4]?.v === "En Taller" ? "En Taller" : "Disponible"
+          });
+        });
+      } else if (type === 'alumnos') {
+        rows.forEach((row, idx) => {
+          if (idx === 0 && row.c[0]?.v === "DNI del Alumno") return;
+          parsed.push({
+            dni: (row.c[0]?.v || "").toString().trim(),
+            nombre: row.c[1]?.v || "Sin Nombre",
+            domicilio: row.c[2]?.v || "Sin domicilio cargado"
+          });
+        });
+      }
+
+      return parsed;
+    }
+
+    // Integra el nuevo inventario conservando los equipos que actualmente se encuentran "Retirados"
+    function mergeInventoryState(newEquipos) {
+      if (DB_EQUIPOS.length === 0) return newEquipos;
+
+      return newEquipos.map(newEq => {
+        const oldEq = DB_EQUIPOS.find(o => o.nombre === newEq.nombre && o.categoria === newEq.categoria);
+        if (oldEq && oldEq.estado === 'Retirado') {
+          newEq.estado = 'Retirado';
+        }
+        return newEq;
+      });
+    }
+
+    // Guarda un alumno nuevo o edita uno existente de manera remota a través del Apps Script
+    async function guardarAlumnoEnGoogleSheet(alumno) {
+      if (!GOOGLE_APPS_SCRIPT_URL) return;
+
+      try {
+        await fetch(GOOGLE_APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "saveStudent",
+            dni: alumno.dni,
+            name: alumno.nombre,
+            address: alumno.domicilio
+          })
+        });
+      } catch (e) {
+        console.error("Error escribiendo alumno remoto", e);
+      }
+    }
+
+    // ================= SISTEMA DE NAVEGACIÓN DE PESTAÑAS =================
+    function switchTab(tabId) {
+      const tabs = ['despacho', 'inventario', 'agenda', 'calendario'];
+      tabs.forEach(t => {
+        document.getElementById(`panel-${t}`).classList.add('hidden');
+        document.getElementById(`btn-tab-${t}`).classList.remove('bg-slate-800', 'text-white', 'shadow-inner');
+        document.getElementById(`btn-tab-${t}`).classList.add('text-slate-400');
+      });
+
+      document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+      activeBtn.classList.add('bg-slate-800', 'text-white', 'shadow-inner');
+      activeBtn.classList.remove('text-slate-400');
+
+      // Actualizar título superior
+      const titulos = {
+        'despacho': 'Estación de Despacho & Reservas',
+        'inventario': 'Control de Inventario & Categorías',
+        'agenda': 'Registro de Agenda & Devoluciones',
+        'calendario': 'Visualización Mensual de Disponibilidad'
+      };
+      document.getElementById('current-panel-title').innerText = titulos[tabId];
+
+      renderAll();
+    }
+
+    function renderAll() {
+      renderDispatchInventory();
+      renderInventoryPanel();
+      renderAgendaPanel();
+      renderCalendario();
+    }
+
+    // ================= PANEL 1: CONTROL DE DESPACHO =================
+
+    // Realiza el autocompletado inteligente de alumnos por DNI
+    function buscarAlumnoPorDNI() {
+      const dniVal = document.getElementById('loan-dni').value.trim();
+      const suggestionsDiv = document.getElementById('student-suggestions');
+      suggestionsDiv.innerHTML = '';
+
+      if (dniVal.length < 2) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+      }
+
+      const coincidentes = DB_ALUMNOS.filter(al => al.dni.includes(dniVal));
+
+      if (coincidentes.length > 0) {
+        suggestionsDiv.classList.remove('hidden');
+        coincidentes.forEach(al => {
+          const item = document.createElement('div');
+          item.className = "px-4 py-2 hover:bg-slate-50 cursor-pointer text-xs flex justify-between items-center border-b border-slate-50";
+          item.innerHTML = `<span class="font-bold text-slate-700">${al.dni}</span> <span class="text-slate-500">${al.nombre}</span>`;
+          item.onclick = function() {
+            document.getElementById('loan-dni').value = al.dni;
+            document.getElementById('loan-nombre').value = al.nombre;
+            document.getElementById('loan-domicilio').value = al.domicilio;
+            suggestionsDiv.classList.add('hidden');
+            showToast("Alumno cargado", "info");
+          };
+          suggestionsDiv.appendChild(item);
+        });
+      } else {
+        suggestionsDiv.classList.add('hidden');
+      }
+    }
+
+    // Calcula la fecha final de entrega
+    function calcularFechasPrestamo() {
+      const startInput = document.getElementById('loan-fecha-retiro').value;
+      const diasPlazo = parseInt(document.getElementById('loan-plazo-dias').value) || 1;
+      
+      if (!startInput) return;
+
+      const dateStart = new Date(startInput + 'T00:00:00');
+      const dateEnd = new Date(dateStart.getTime());
+      dateEnd.setDate(dateStart.getDate() + diasPlazo);
+
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+      document.getElementById('txt-devolucion-calculada').innerText = dateEnd.toLocaleDateString('es-AR', options);
+    }
+
+    // Renderiza los equipos del despacho con los buscadores y filtros
+    function renderDispatchInventory() {
+      const container = document.getElementById('dispatch-items-container');
+      container.innerHTML = '';
+
+      const query = document.getElementById('dispatch-search').value.toLowerCase();
+      const category = document.getElementById('dispatch-category-filter').value;
+
+      const filtered = DB_EQUIPOS.filter(eq => {
+        const matchesQuery = eq.nombre.toLowerCase().includes(query) || eq.descripcion_detallada.toLowerCase().includes(query);
+        const matchesCategory = category === 'Todos' || eq.categoria === category;
+        return matchesQuery && matchesCategory;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400 py-12">No hay equipos que coincidan con la búsqueda.</div>`;
+        return;
+      }
+
+      filtered.forEach(eq => {
+        const isSelected = selectedDispatchIds.includes(eq.id);
+        const canBeSelected = eq.estado === 'Disponible';
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border transition flex flex-col justify-between ${
+          isSelected 
+            ? 'border-red-500 bg-red-50/20 shadow-md ring-1 ring-red-500' 
+            : canBeSelected 
+              ? 'border-slate-200 bg-white hover:border-slate-300' 
+              : 'border-slate-100 bg-slate-50 opacity-60'
+        }`;
+
+        let actionButtonHTML = '';
+        if (isSelected) {
+          actionButtonHTML = `
+            <button onclick="toggleDispatchSelection('${eq.id}')" class="bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1 hover:bg-red-500">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              <span>Agregado</span>
+            </button>`;
+        } else if (canBeSelected) {
+          actionButtonHTML = `
+            <button onclick="toggleDispatchSelection('${eq.id}')" class="border border-slate-300 bg-white text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-50 transition">
+              Seleccionar
+            </button>`;
+        } else {
+          const badgeColor = eq.estado === 'Retirado' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800';
+          actionButtonHTML = `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded ${badgeColor}">${eq.estado}</span>`;
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase text-slate-400 tracking-wider">${eq.categoria}</span>
+                <h4 class="font-bold text-slate-800 text-sm mt-0.5">${eq.nombre}</h4>
+              </div>
+              <span class="text-xs font-bold text-slate-600">u$s ${eq.precio_usd}</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-2" title="${eq.descripcion_detallada}">${eq.descripcion_detallada}</p>
+          </div>
+          <div class="mt-4 flex items-center justify-between border-t border-slate-50 pt-3">
+            <span class="text-[10px] text-slate-400">ID: ${eq.id}</span>
+            ${actionButtonHTML}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      document.getElementById('dispatch-selected-count').innerText = `${selectedDispatchIds.length} seleccionados`;
+    }
+
+    // Alterna la selección de ítems en el despacho
+    function toggleDispatchSelection(id) {
+      if (selectedDispatchIds.includes(id)) {
+        selectedDispatchIds = selectedDispatchIds.filter(i => i !== id);
+      } else {
+        selectedDispatchIds.push(id);
+      }
+      renderDispatchInventory();
+      recalculateTotals();
+    }
+
+    // Recalcula el total de dólares y de seguro en pesos
+    function recalculateTotals() {
+      const sumUsdEl = document.getElementById('sum-usd');
+      const sumArsEl = document.getElementById('sum-ars');
+
+      const totalUSD = selectedDispatchIds.reduce((acc, id) => {
+        const item = DB_EQUIPOS.find(e => e.id === id);
+        return acc + (item ? item.precio_usd : 0);
+      }, 0);
+
+      const totalARS = Math.round(totalUSD * (variablesFinancieras.seguroPercent / 100) * variablesFinancieras.dolar);
+
+      sumUsdEl.innerText = `u$s ${totalUSD.toLocaleString('es-AR')}`;
+      sumArsEl.innerText = `$ ${totalARS.toLocaleString('es-AR')}`;
+    }
+
+    // Emisión formal del comodato
+    async function emitirComodato() {
+      const dni = document.getElementById('loan-dni').value.trim();
+      const nombre = document.getElementById('loan-nombre').value.trim();
+      const domicilio = document.getElementById('loan-domicilio').value.trim();
+      const fechaRetiroStr = document.getElementById('loan-fecha-retiro').value;
+      const plazoDias = parseInt(document.getElementById('loan-plazo-dias').value) || 1;
+
+      if (!dni || !nombre || !domicilio) {
+        showToast("Error: Faltan completar los datos del alumno.", "error");
+        return;
+      }
+
+      if (selectedDispatchIds.length === 0) {
+        showToast("Error: Debes seleccionar al menos un equipo en stock.", "error");
+        return;
+      }
+
+      const dateStart = new Date(fechaRetiroStr + 'T00:00:00');
+      const dateEnd = new Date(dateStart.getTime());
+      dateEnd.setDate(dateStart.getDate() + plazoDias);
+
+      // Creamos el registro del alumno local si no existía
+      let alumno = DB_ALUMNOS.find(a => a.dni === dni);
+      if (!alumno) {
+        alumno = { dni, nombre, domicilio };
+        DB_ALUMNOS.push(alumno);
+      } else {
+        alumno.nombre = nombre;
+        alumno.domicilio = domicilio;
+      }
+
+      // Guardamos alumnos de forma bidireccional en Google Sheets
+      await guardarAlumnoEnGoogleSheet(alumno);
+
+      // Actualizamos los estados de los equipos a "Retirado" en el inventario
+      const equiposReservados = [];
+      selectedDispatchIds.forEach(id => {
+        const eq = DB_EQUIPOS.find(e => e.id === id);
+        if (eq) {
+          eq.estado = "Retirado";
+          equiposReservados.push(eq);
+        }
+      });
+
+      // Creamos el objeto comodato
+      const horasTotales = plazoDias * 24;
+      const totalUSD = equiposReservados.reduce((acc, eq) => acc + eq.precio_usd, 0);
+      const totalARS = Math.round(totalUSD * (variablesFinancieras.seguroPercent / 100) * variablesFinancieras.dolar);
+
+      const nuevoComodato = {
+        id: `CO-${2600 + DB_COMODATOS.length}`,
+        alumno: { ...alumno },
+        equipos: equiposReservados.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd })),
+        fechaRetiroISO: dateStart.toISOString(),
+        fechaDevolucionISO: dateEnd.toISOString(),
+        horas: horasTotales,
+        totalUSD: totalUSD,
+        totalARS: totalARS,
+        estado: 'Activo'
+      };
+
+      DB_COMODATOS.push(nuevoComodato);
+      selectedDispatchIds = [];
+
+      persistData();
+      showToast("Comodato emitido correctamente", "success");
+
+      // Abrimos el visor del comodato directamente
+      abrirVisorComodato(nuevoComodato);
+      renderAll();
+    }
+
+    // ================= PANEL 2: CONTROL DE INVENTARIO =================
+    function filterInventoryCategory(category) {
+      activeInventoryCategory = category;
+      const tabs = ['Todos', 'Camaras', 'Iluminacion', 'Audio', 'Accesorios'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-inv-${t}`);
+        if (btn) {
+          btn.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition";
+        }
+      });
+
+      const activeTabId = category === 'Todos' ? 'Todos' : category === 'Cámaras y lentes' ? 'Camaras' : category === 'Iluminación' ? 'Iluminacion' : category === 'Audio' ? 'Audio' : 'Accesorios';
+      document.getElementById(`tab-inv-${activeTabId}`).className = "px-4 py-2 rounded-lg text-sm font-semibold transition bg-red-50 text-red-700 border border-red-100";
+      
+      renderInventoryPanel();
+    }
+
+    function renderInventoryPanel() {
+      const grid = document.getElementById('inventory-grid');
+      grid.innerHTML = '';
+
+      const query = document.getElementById('inventory-search').value.toLowerCase();
+
+      const filtered = DB_EQUIPOS.filter(eq => {
+        const matchesQuery = eq.nombre.toLowerCase().includes(query) || eq.id.toLowerCase().includes(query);
+        const matchesCategory = activeInventoryCategory === 'Todos' || eq.categoria === activeInventoryCategory;
+        return matchesQuery && matchesCategory;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-16">No hay equipos registrados en esta categoría.</div>`;
+        return;
+      }
+
+      filtered.forEach(eq => {
+        let badgeColor = '';
+        if (eq.estado === 'Disponible') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        else if (eq.estado === 'Retirado') badgeColor = 'bg-amber-50 text-amber-700 border-amber-100';
+        else badgeColor = 'bg-red-50 text-red-700 border-red-100';
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">${eq.categoria}</span>
+                <h4 class="font-bold text-slate-800 text-sm mt-0.5">${eq.nombre}</h4>
+              </div>
+              <span class="text-xs font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded">u$s ${eq.precio_usd}</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-3">${eq.descripcion_detallada}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] text-slate-400">Código: ${eq.id}</span>
+            <div class="flex items-center space-x-2">
+              <span class="border text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}">${eq.estado}</span>
+              ${eq.estado === 'Disponible' ? `
+                <button onclick="cambiarEstadoTaller('${eq.id}', 'En Taller')" class="text-[10px] text-red-500 hover:underline">Mandar a Taller</button>
+              ` : eq.estado === 'En Taller' ? `
+                <button onclick="cambiarEstadoTaller('${eq.id}', 'Disponible')" class="text-[10px] text-emerald-500 hover:underline">Reparado</button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Cambia el estado para reparación/taller
+    function cambiarEstadoTaller(id, nuevoEstado) {
+      const eq = DB_EQUIPOS.find(e => e.id === id);
+      if (!eq) return;
+
+      openConfirmModal(
+        `¿Deseas marcar este equipo como ${nuevoEstado === 'En Taller' ? 'en mantenimiento' : 'disponible'}?`,
+        () => {
+          eq.estado = nuevoEstado;
+          persistData();
+          showToast(`Equipo modificado a ${nuevoEstado}`, "success");
+          renderAll();
+        }
+      );
+    }
+
+    // ================= PANEL 3: REGISTRO DE AGENDA =================
+    function filterAgenda(status) {
+      activeAgendaFilter = status;
+      const btns = ['Todos', 'Activos', 'Pendientes', 'Devueltos'];
+      btns.forEach(b => {
+        document.getElementById(`tab-agenda-${b}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100";
+      });
+      document.getElementById(`tab-agenda-${status}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white";
+
+      renderAgendaPanel();
+    }
+
+    function renderAgendaPanel() {
+      const tbody = document.getElementById('agenda-tbody');
+      const emptyDiv = document.getElementById('agenda-empty');
+      tbody.innerHTML = '';
+
+      const now = new Date();
+
+      const filtered = DB_COMODATOS.filter(co => {
+        if (activeAgendaFilter === 'Todos') return true;
+        if (activeAgendaFilter === 'Devueltos') return co.estado === 'Devuelto';
+        
+        const fechaRetiro = new Date(co.fechaRetiroISO);
+        if (activeAgendaFilter === 'Activos') {
+          return co.estado === 'Activo' && fechaRetiro <= now;
+        }
+        if (activeAgendaFilter === 'Pendientes') {
+          return co.estado === 'Activo' && fechaRetiro > now;
+        }
+        return true;
+      });
+
+      document.getElementById('agenda-count').innerText = `Mostrando ${filtered.length} registros`;
+
+      if (filtered.length === 0) {
+        emptyDiv.classList.remove('hidden');
+        return;
+      }
+      emptyDiv.classList.add('hidden');
+
+      filtered.forEach(co => {
+        const fechaR = new Date(co.fechaRetiroISO);
+        const fechaD = new Date(co.fechaDevolucionISO);
+        const rangoFechas = `${fechaR.toLocaleDateString('es-AR')} al ${fechaD.toLocaleDateString('es-AR')}`;
+
+        const equiposTextoCuerp = co.equipos.map(e => e.nombre).join(', ');
+
+        let statusBadge = '';
+        if (co.estado === 'Devuelto') {
+          statusBadge = `<span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Devuelto</span>`;
+        } else if (fechaD < now) {
+          statusBadge = `<span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider animate-pulse">Atrasado</span>`;
+        } else if (fechaR > now) {
+          statusBadge = `<span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Reserva</span>`;
+        } else {
+          statusBadge = `<span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Activo</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50 transition border-b border-slate-100";
+        tr.innerHTML = `
+          <td class="py-4 px-6">
+            <span class="text-[10px] font-bold text-red-500">${co.id}</span>
+            <div class="font-bold text-slate-800">${co.alumno.nombre}</div>
+            <div class="text-xs text-slate-400">DNI: ${co.alumno.dni}</div>
+          </td>
+          <td class="py-4 px-6 max-w-xs">
+            <div class="font-medium text-slate-800 line-clamp-1" title="${equiposTextoCuerp}">${equiposTextoCuerp}</div>
+            <div class="text-xs text-slate-400">${co.equipos.length} artículo(s)</div>
+          </td>
+          <td class="py-4 px-6 text-xs font-semibold text-slate-600">
+            ${rangoFechas}
+            <div class="text-[10px] text-slate-400 font-normal">Plazo: ${co.horas} hs</div>
+          </td>
+          <td class="py-4 px-6 text-xs">
+            <div class="font-bold text-slate-700">u$s ${co.totalUSD}</div>
+            <div class="text-slate-500 font-medium">$ ${co.totalARS.toLocaleString('es-AR')}</div>
+          </td>
+          <td class="py-4 px-6 text-center">${statusBadge}</td>
+          <td class="py-4 px-6 text-right">
+            <div class="flex justify-end space-x-2">
+              <button onclick="verComodatoId('${co.id}')" class="text-xs border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 px-2.5 py-1.5 rounded-lg font-semibold flex items-center">
+                <svg class="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Ver
+              </button>
+              ${co.estado === 'Activo' ? `
+                <button onclick="devolverComodato('${co.id}')" class="text-xs bg-red-600 hover:bg-red-500 text-white px-2.5 py-1.5 rounded-lg font-semibold shadow-sm">
+                  Devolver
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Procesamiento de la devolución de equipos
+    function devolverComodato(id) {
+      const co = DB_COMODATOS.find(c => c.id === id);
+      if (!co) return;
+
+      openConfirmModal(
+        `¿Deseas registrar la devolución de equipos para el Comodato ${co.id}?`,
+        () => {
+          co.estado = 'Devuelto';
+          
+          // Volver a poner disponibles los equipos asociados
+          co.equipos.forEach(item => {
+            const eq = DB_EQUIPOS.find(e => e.id === item.id);
+            if (eq) {
+              eq.estado = "Disponible";
+            }
+          });
+
+          persistData();
+          showToast("Devolución registrada correctamente", "success");
+          renderAll();
+        }
+      );
+    }
+
+    // ================= PANEL 4: CALENDARIO DE OCUPACIÓN =================
+    function cambiarMes(dir) {
+      calendarDate.setMonth(calendarDate.getMonth() + dir);
+      renderCalendario();
+    }
+
+    function renderCalendario() {
+      const grid = document.getElementById('calendar-grid');
+      const headerText = document.getElementById('calendar-month-year');
+      grid.innerHTML = '';
+
+      const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      headerText.innerText = `${meses[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
+
+      // Lógica de fechas
+      const primerDiaMes = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1).getDay();
+      const diasEnMes = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate();
+
+      // Rellenos iniciales
+      for (let i = 0; i < primerDiaMes; i++) {
+        const dummy = document.createElement('div');
+        dummy.className = "h-14 bg-slate-50/50 rounded-lg border border-slate-100/40";
+        grid.appendChild(dummy);
+      }
+
+      // Render de días reales
+      for (let dia = 1; dia <= diasEnMes; dia++) {
+        const celda = document.createElement('div');
+        const diaFecha = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), dia);
+        
+        // Buscamos si este día está contenido dentro de algún comodato activo
+        const reservasDelDia = DB_COMODATOS.filter(co => {
+          if (co.estado !== 'Activo') return false;
+          const fStart = new Date(co.fechaRetiroISO);
+          const fEnd = new Date(co.fechaDevolucionISO);
+          return diaFecha >= fStart && diaFecha <= fEnd;
+        });
+
+        const tieneReserva = reservasDelDia.length > 0;
+        const colorCelda = tieneReserva 
+          ? 'bg-amber-50 border-amber-300 hover:bg-amber-100/60 cursor-pointer' 
+          : 'bg-white border-slate-200 hover:border-slate-300 cursor-pointer';
+
+        celda.className = `h-14 p-1 rounded-lg border transition flex flex-col justify-between ${colorCelda}`;
+        celda.innerHTML = `
+          <span class="text-xs font-bold ${tieneReserva ? 'text-amber-800' : 'text-slate-500'}">${dia}</span>
+          ${tieneReserva ? `
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 self-end mb-1 inline-block" title="${reservasDelDia.length} préstamos activos"></span>
+          ` : ''}
+        `;
+
+        celda.onclick = () => verDetalleDiaCalendario(diaFecha, reservasDelDia);
+        grid.appendChild(celda);
+      }
+    }
+
+    function verDetalleDiaCalendario(fecha, reservas) {
+      const titleEl = document.getElementById('calendar-detail-date');
+      const listEl = document.getElementById('calendar-detail-list');
+
+      titleEl.innerText = fecha.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      listEl.innerHTML = '';
+
+      if (reservas.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-slate-400 text-xs text-center py-12 border border-dashed rounded-xl">
+            Sin equipos comprometidos para este día. El pañol completo está disponible.
+          </div>`;
+        return;
+      }
+
+      reservas.forEach(r => {
+        const div = document.createElement('div');
+        div.className = "bg-amber-50/50 p-4 rounded-xl border border-amber-200 space-y-2";
+        div.innerHTML = `
+          <div class="flex justify-between items-center border-b border-amber-200/60 pb-1.5">
+            <span class="text-[10px] font-bold text-red-500">${r.id}</span>
+            <span class="text-[10px] font-bold uppercase text-amber-800 bg-amber-100 px-2 py-0.5 rounded">Fuera del pañol</span>
+          </div>
+          <p class="text-xs text-slate-800"><span class="font-semibold text-slate-500">Alumno:</span> ${r.alumno.nombre}</p>
+          <p class="text-xs text-slate-500 line-clamp-2"><span class="font-semibold text-slate-500">Equipos:</span> ${r.equipos.map(e => e.nombre).join(', ')}</p>
+          <div class="flex justify-end pt-1">
+            <button onclick="verComodatoId('${r.id}')" class="text-[10px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2 py-1 rounded font-bold transition shadow-sm">
+              Ver Comodato
+            </button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
+    }
+
+    // ================= MOTOR DE PLANTILLAS Y VISOR DE COMODATOS =================
+    
+    function verComodatoId(id) {
+      const co = DB_COMODATOS.find(c => c.id === id);
+      if (co) abrirVisorComodato(co);
+    }
+
+    // Abre el visor del contrato e inyecta la plantilla oficial automatizada
+    function abrirVisorComodato(loan) {
+      const modal = document.getElementById('modal-comodato');
+      const paper = document.getElementById('modal-paper-content');
+
+      const fechaR = new Date(loan.fechaRetiroISO);
+      const diaTexto = fechaR.getDate().toString();
+      const mesesNombres = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+      const mesTexto = mesesNombres[fechaR.getMonth()];
+
+      // Generar string detallado de equipos concatenados con guiones de seguridad
+      const equiposConcatenados = loan.equipos.map(e => `UN/A ${e.nombre.toUpperCase()} (${e.descripcion})`).join('; ') + ".-";
+
+      const contratoCompilado = `
+        <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
+        
+        <p class="mb-4">
+          Entre la <strong>Fundación Iberoamericana de Estudios Superiores</strong> (en adelante <strong>F.I.E.S.</strong>) con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra. <strong>${loan.alumno.nombre.toUpperCase()}</strong> con domicilio en <strong>${loan.alumno.domicilio.toUpperCase()}</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>PRIMERA</strong> La F.I.E.S. entrega en comodato al alumno: <span id="print-equipos">_______________________</span>, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.---------------------------------------------------------------------------------------
+        
+        <p class="mb-4">
+          <strong>PRIMERA:</strong> La F.I.E.S. entrega en comodato al alumno: <strong>${equiposConcatenados}</strong>, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.---------------------------------------------------------------------------------------
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>SEGUNDA</strong> Dichos equipos tienen un valor total de u$s <strong id="print-precio-usd">_______</strong>, el cual el alumno declara conocer y aceptar.-------------------------------------------------------------------------------------------------------------------------------- 
+        
+        <p class="mb-4">
+          <strong>SEGUNDA:</strong> Dichos equipos tienen un valor total de u$s <strong>${loan.totalUSD.toLocaleString('es-AR')}</strong>, el cual el alumno declara conocer y aceptar.-------------------------------------------------------------------------------------------------------------------------------- 
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>TERCERA</strong> El comodato del equipo se realiza por el término de <strong id="print-horas">____</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.------------------------------------------------- 
+        
+        <p class="mb-4">
+          <strong>TERCERA:</strong> El comodato del equipo se realiza por el término de <strong>${loan.horas}</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.------------------------------------------------- 
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>CUARTA</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos (<strong id="print-precio-ars">$ ________</strong>), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------
+        
+        <p class="mb-4">
+          <strong>CUARTA:</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos <strong>$ ${loan.totalARS.toLocaleString('es-AR')}</strong>, en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>QUINTA</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------
+        
+        <p class="mb-4">
+          <strong>QUINTA:</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------
         </p>
-
-        <p style="text-align: justify; margin-bottom: 18px;">
-            <strong>SEXTA</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------
+        
+        <p class="mb-4">
+          <strong>SEXTA:</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------
         </p>
-
-        <p style="text-align: justify; margin-bottom: 25px;">
-            <strong>SÉPTIMA</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------
+        
+        <p class="mb-4">
+          <strong>SÉPTIMA:</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------
         </p>
-
-        <p style="text-align: justify; margin-bottom: 50px;">
-            En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong id="print-dia">__</strong> días del mes de <strong id="print-mes">_________</strong>  del 2026.
+        
+        <p class="mb-8">
+          En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong>${diaTexto}</strong> días del mes de <strong>${mesTexto}</strong> del 2026.
         </p>
 
         <!-- Bloque de Firmas -->
-        <div style="display: flex; justify-content: space-between; margin-top: 60px; text-align: center;">
-            <div style="width: 45%; border-top: 1px solid #000; padding-top: 10px;">
-                <p style="margin: 0; font-weight: bold; font-size: 10pt;">Firma del Alumno</p>
-                <p style="margin: 5px 0 0; font-size: 9pt; color: #555;">DNI: <span id="signature-dni">___________</span></p>
-            </div>
-            <div style="width: 45%; border-top: 1px solid #000; padding-top: 10px;">
-                <p style="margin: 0; font-weight: bold; font-size: 10pt;">Sello y Firma F.I.E.S.</p>
-                <p style="margin: 5px 0 0; font-size: 9pt; color: #555;">Autorizado por el Pañolero</p>
-            </div>
+        <div class="grid grid-cols-2 gap-12 pt-16 text-center">
+          <div class="border-t border-slate-400 pt-2 text-[10px]">
+            <p class="font-bold">Firma del Alumno</p>
+            <p class="text-slate-500">DNI: ${loan.alumno.dni}</p>
+          </div>
+          <div class="border-t border-slate-400 pt-2 text-[10px]">
+            <p class="font-bold">Por F.I.E.S. / Pañol</p>
+            <p class="text-slate-500">Estudio Audiovisual UAI</p>
+          </div>
         </div>
-    </div>
-
-    <script>
-        // =========================================================================
-        // CONFIGURACIÓN DE GOOGLE SHEETS: Reemplazá con la URL de tu hoja de cálculo.
-        // Asegurate de que esté compartida como "Cualquier persona con el enlace puede ver".
-        // Columnas obligatorias: Equipo, Categoría, Detalle en Comodato, Valor USD, Estado
-        // =========================================================================
-        const GOOGLE_SHEETS_SOURCE = "https://docs.google.com/spreadsheets/d/1F0bnEV_J8aRqQ8t9SW3SsmtBz7EKvPdugBFJeLktqDY/edit?usp=sharing"; 
-
-        /* Base de datos inicial precargada persistente en LocalStorage */
-        const defaultInventory = [
-            { id: "EQ001", name: "Cámara Sony a7III", category: "Cámaras y lentes", usd: 1800, desc: "Cámara Mirrorless Sony a7III Full Frame, incluye lente zoom 28-70mm, 2 baterías, correa original y bolso de transporte.", status: "Disponible" },
-            { id: "EQ002", name: "Lente Sigma 35mm f/1.4 Art", category: "Cámaras y lentes", usd: 900, desc: "Lente de focal fija Sigma 35mm f/1.4 montura Sony E, con parasol rígido, tapa delantera y trasera, en estuche de pana.", status: "Disponible" },
-            { id: "EQ003", name: "Iluminador LED Aputure Amaran 100d", category: "Iluminación", usd: 350, desc: "Foco LED de luz continua, trípode de iluminación de 2.2 metros, reflector parabólico y cable de corriente largo.", status: "Disponible" },
-            { id: "EQ004", name: "Micrófono de Solapa Rode Wireless GO II", category: "Audio", usd: 420, desc: "Set de micrófonos inalámbricos Rode (2 transmisores, 1 receptor), estuche protector, cables TRS y USB-C de recarga.", status: "Disponible" },
-            { id: "EQ005", name: "Grabador de Campo Zoom H6", category: "Audio", usd: 500, desc: "Grabador multipista Zoom H6 con cápsula XY, tarjeta de memoria SD de 64GB y estuche rígido de transporte.", status: "Disponible" }
-        ];
-
-        const defaultStudents = {
-            "42123456": { name: "Juan Pérez", address: "Av. Pellegrini 1950, Rosario" },
-            "43987654": { name: "Sofía Rodríguez", address: "Bv. Oroño 340, Rosario" }
-        };
-
-        const defaultLoans = [
-            {
-                id: "PR0001",
-                student: { dni: "42123456", name: "Juan Pérez", address: "Av. Pellegrini 1950, Rosario" },
-                equipments: [
-                    { id: "EQ001", name: "Cámara Sony a7III", desc: "Cámara Mirrorless Sony a7III Full Frame, incluye lente zoom 28-70mm...", usd: 1800 }
-                ],
-                hours: 48,
-                days: 2,
-                date: "10/06/2026",
-                startDateISO: "2026-06-10T12:00:00.000Z",
-                endDateISO: "2026-06-12T12:00:00.000Z",
-                totalUSD: 1800,
-                insuranceARS: 20700
-            }
-        ];
-
-        let appData = {
-            inventory: JSON.parse(localStorage.getItem('uai_inventory')) || defaultInventory,
-            students: JSON.parse(localStorage.getItem('uai_students')) || defaultStudents,
-            loans: JSON.parse(localStorage.getItem('uai_loans')) || defaultLoans,
-            config: JSON.parse(localStorage.getItem('uai_config')) || { dollarRate: 1150, insuranceTax: 1.0, sheetUrl: "" },
-            categoryFilter: "Todos"
-        };
-
-        // Instancia de fecha para navegar en el calendario de forma dinámica (Junio de 2026)
-        let currentCalendarDate = new Date(2026, 5, 10);
-        let confirmCallback = null;
-
-        /* Toast premium para alertas no intrusivas */
-        function showToast(message, type = "info") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `p-4 rounded-xl shadow-lg text-white font-medium text-xs flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm`;
-            
-            let icon = '<i class="fa-solid fa-circle-info"></i>';
-            if (type === 'success') {
-                toast.className += ' bg-emerald-600';
-                icon = '<i class="fa-solid fa-circle-check"></i>';
-            } else if (type === 'error') {
-                toast.className += ' bg-rose-600';
-                icon = '<i class="fa-solid fa-circle-exclamation"></i>';
-            } else if (type === 'warning') {
-                toast.className += ' bg-amber-500';
-                icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
-            } else {
-                toast.className += ' bg-slate-800';
-            }
-
-            toast.innerHTML = `${icon} <span>${message}</span>`;
-            container.appendChild(toast);
-
-            toast.offsetHeight; // Forzar reflow
-            toast.classList.remove('translate-y-2', 'opacity-0');
-
-            setTimeout(() => {
-                toast.classList.add('translate-y-2', 'opacity-0');
-                setTimeout(() => { toast.remove(); }, 300);
-            }, 4000);
-        }
-
-        /* Diálogo de confirmación personalizado */
-        function customConfirm(title, message, onOk) {
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-message').innerText = message;
-            document.getElementById('confirm-modal').classList.remove('hidden');
-            confirmCallback = onOk;
-        }
-
-        document.getElementById('confirm-cancel-btn').onclick = function() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-            confirmCallback = null;
-        };
-
-        document.getElementById('confirm-ok-btn').onclick = function() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-            if (confirmCallback) confirmCallback();
-            confirmCallback = null;
-        };
-
-        /* Sistema de Login */
-        function handleLogin(event) {
-            event.preventDefault();
-            const user = document.getElementById('login-user').value;
-            const pass = document.getElementById('login-pass').value;
-            const errorDiv = document.getElementById('login-error');
-
-            if (user === 'admin' && pass === 'uai2026') {
-                localStorage.setItem('uai_session', 'active');
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                initApp();
-                showToast("Sesión administrativa iniciada correctamente", "success");
-            } else {
-                errorDiv.classList.remove('hidden');
-            }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('uai_session');
-            document.getElementById('login-screen').classList.remove('hidden');
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('login-form').reset();
-            document.getElementById('login-error').classList.add('hidden');
-            showToast("Sesión finalizada", "info");
-        }
-
-        /* Sincronización Automática en Segundo Plano con Google Sheets */
-        async function checkAutoSync() {
-            const statusText = document.getElementById('sync-status-text');
-            const lastTimeText = document.getElementById('sync-last-time');
-            const pingElement = document.getElementById('sync-ping');
-            const dotElement = document.getElementById('sync-indicator-dot');
-
-            if (!GOOGLE_SHEETS_SOURCE || GOOGLE_SHEETS_SOURCE.trim() === "" || GOOGLE_SHEETS_SOURCE.includes("REEMPLAZAR")) {
-                statusText.innerText = "Sin Configurar";
-                statusText.className = "font-semibold text-amber-400 text-xs";
-                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-                if (pingElement) pingElement.classList.add('hidden');
-                lastTimeText.innerText = "Configurá la constante GOOGLE_SHEETS_SOURCE en el código script.";
-                return;
-            }
-
-            const lastSync = localStorage.getItem('uai_last_sync_time');
-            const now = Date.now();
-            const oneDayMs = 24 * 60 * 60 * 1000; // 24 Horas exactas
-
-            // Ejecutar sincronización si nunca se sincronizó, si pasaron 24hs, o si el inventario local está en cero
-            if (!lastSync || (now - parseInt(lastSync)) > oneDayMs || appData.inventory.length === 0) {
-                statusText.innerText = "Sincronizando...";
-                statusText.className = "font-semibold text-sky-400 animate-pulse text-xs";
-                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-sky-500";
-                if (pingElement) pingElement.classList.remove('hidden');
-
-                const success = await syncGoogleSheetsAuto();
-                if (success) {
-                    localStorage.setItem('uai_last_sync_time', now.toString());
-                    statusText.innerText = "Actualizado";
-                    statusText.className = "font-semibold text-emerald-400 text-xs";
-                    dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                    if (pingElement) pingElement.classList.add('hidden');
-                    lastTimeText.innerText = `Sincronizado ahora`;
-                    showToast("Inventario actualizado automáticamente desde Google Sheets", "success");
-                } else {
-                    statusText.innerText = "Error";
-                    statusText.className = "font-semibold text-rose-400 text-xs";
-                    dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
-                    if (pingElement) pingElement.classList.add('hidden');
-                    lastTimeText.innerText = "Error de conexión o permisos.";
-                }
-            } else {
-                statusText.innerText = "Actualizado";
-                statusText.className = "font-semibold text-emerald-400 text-xs";
-                dotElement.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                if (pingElement) pingElement.classList.add('hidden');
-                
-                const hoursPassed = Math.round((now - parseInt(lastSync)) / (1000 * 60 * 60));
-                if (hoursPassed === 0) {
-                    lastTimeText.innerText = `Sincronizado hace menos de 1 hora`;
-                } else {
-                    lastTimeText.innerText = `Sincronizado hace ${hoursPassed} hs`;
-                }
-            }
-        }
-
-        async function syncGoogleSheetsAuto() {
-            let inputUrl = GOOGLE_SHEETS_SOURCE.trim();
-            let sheetId = inputUrl;
-            const urlMatch = inputUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-            if (urlMatch) {
-                sheetId = urlMatch[1];
-            }
-
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
-
-            try {
-                const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error("Fallo en la descarga de la hoja.");
-                const text = await response.text();
-                
-                const rows = parseCSV(text);
-                if (rows.length < 2) return false;
-
-                // Normalizar cabeceras a minúsculas y sin acentos
-                const headers = rows[0].map(h => h.trim().toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-
-                const colEquipo = headers.indexOf("equipo");
-                const colCategoria = headers.indexOf("categoria");
-                const colDetalle = headers.indexOf("detalle en comodato");
-                const colValor = headers.indexOf("valor usd");
-                const colEstado = headers.indexOf("estado");
-
-                if (colEquipo === -1 || colCategoria === -1 || colDetalle === -1 || colValor === -1 || colEstado === -1) {
-                    console.error("Columnas faltantes en Google Sheets.");
-                    return false;
-                }
-
-                const importedInventory = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (!row[colEquipo]) continue; // Saltar filas vacías
-
-                    const cleanUSD = parseFloat(row[colValor].replace(/[^0-9.]/g, "")) || 0;
-                    const cleanStatus = ["Disponible", "Retirado", "En Taller", "En Mantenimiento"].includes(row[colEstado].trim()) 
-                        ? row[colEstado].trim() 
-                        : "Disponible";
-
-                    importedInventory.push({
-                        id: "EQ" + String(i).padStart(3, '0'),
-                        name: row[colEquipo].trim(),
-                        category: row[colCategoria].trim(),
-                        desc: row[colDetalle].trim(),
-                        usd: cleanUSD,
-                        status: cleanStatus
-                    });
-                }
-
-                appData.inventory = importedInventory;
-                saveData();
-                renderInventory();
-                renderDispatchList();
-                return true;
-
-            } catch (err) {
-                console.error("Fallo de auto-sincronización con Google Sheets:", err);
-                return false;
-            }
-        }
-
-        // Parseador robusto de CSV para evitar problemas con las comillas y comas internas de los detalles
-        function parseCSV(text) {
-            let lines = [];
-        function parseCSV(text) {
-            let lines = [];
-            let row = [""];
-            let inQuotes = false;
-            
-            for (let i = 0; i < text.length; i++) {
-                let c = text[i];
-                let next = text[i+1];
-                if (c === '"') {
-                    if (inQuotes && next === '"') {
-                        row[row.length - 1] += '"';
-                        i++;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (c === ',' && !inQuotes) {
-                    row.push('');
-                } else if ((c === '\r' || c === '\n') && !inQuotes) {
-                    if (c === '\r' && next === '\n') { i++; }
-                    lines.push(row);
-                    row = [''];
-                } else {
-                    row[row.length - 1] += c;
-                }
-            }
-            if (row.length > 1 || row[0] !== '') {
-                lines.push(row);
-            }
-            return lines;
-        }
-
-        /* Inicialización y render */
-        function initApp() {
-            document.getElementById('config-dollar').value = appData.config.dollarRate;
-            document.getElementById('config-tax').value = appData.config.insuranceTax;
-            
-            // Inicializar la fecha por defecto de retiro a Hoy (Contexto: 10/06/2026)
-            document.getElementById('loan-start-date').value = "2026-06-10";
-            
-            syncEquipmentsStatusWithLoans();
-            renderInventory();
-            renderDispatchList();
-            renderLoans();
-            drawCalendar();
-            updateStats();
-
-            // Sincronización automática silenciosa
-            checkAutoSync();
-        }
-
-        function syncEquipmentsStatusWithLoans() {
-            // Sincronizar estados de inventario con las devoluciones reales
-            appData.inventory.forEach(eq => {
-                if (eq.status !== "En Taller") eq.status = "Disponible";
-            });
-            appData.loans.forEach(loan => {
-                // Si el préstamo ya expiró o está en curso, marcar de modo informativo
-                loan.equipments.forEach(le => {
-                    const eq = appData.inventory.find(i => i.id === le.id);
-                    if (eq && eq.status !== "En Taller") eq.status = "Retirado";
-                });
-            });
-            saveData();
-        }
-
-        function saveData() {
-            localStorage.setItem('uai_inventory', JSON.stringify(appData.inventory));
-            localStorage.setItem('uai_students', JSON.stringify(appData.students));
-            localStorage.setItem('uai_loans', JSON.stringify(appData.loans));
-            localStorage.setItem('uai_config', JSON.stringify(appData.config));
-            updateStats();
-        }
-
-        function updateConfig() {
-            appData.config.dollarRate = parseFloat(document.getElementById('config-dollar').value) || 1150;
-            appData.config.insuranceTax = parseFloat(document.getElementById('config-tax').value) || 1.0;
-            saveData();
-            updateLoanSummary();
-            renderLoans();
-            showToast("Configuración económica actualizada", "success");
-        }
-
-        function updateStats() {
-            const avail = appData.inventory.filter(e => e.status === 'Disponible').length;
-            const borrow = appData.inventory.filter(e => e.status === 'Retirado').length;
-            const maint = appData.inventory.filter(e => e.status === 'En Taller').length;
-
-            document.getElementById('stat-available').innerText = avail;
-            document.getElementById('stat-borrowed').innerText = borrow;
-            document.getElementById('stat-maintenance').innerText = maint;
-        }
-
-        /* Control de Categorías */
-        function setCategoryFilter(category) {
-            appData.categoryFilter = category;
-            
-            // Render de estilos activos en los botones de pestañas
-            document.querySelectorAll('.category-tab').forEach(tab => {
-                tab.className = "category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition duration-150";
-            });
-            
-            let safeId = category === 'Cámaras y lentes' ? 'Camaras' :
-                         category === 'Iluminación' ? 'Iluminacion' :
-                         category === 'Audio' ? 'Audio' :
-                         category === 'Accesorios varios' ? 'Accesorios' : 'Todos';
-                         
-            document.getElementById(`tab-${safeId}`).className = "category-tab px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white transition duration-150 shadow-sm";
-            
-            renderInventory();
-        }
-
-        /* Gestión de Cambios de Pestaña */
-        function switchTab(tabId) {
-            document.getElementById('section-inventario').classList.add('hidden');
-            document.getElementById('section-despacho').classList.add('hidden');
-            document.getElementById('section-agenda').classList.add('hidden');
-
-            document.getElementById(`section-${tabId}`).classList.remove('hidden');
-
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = "nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 hover:bg-slate-800 hover:text-white text-slate-400";
-            });
-            document.getElementById(`btn-${tabId}`).className = "nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 bg-indigo-600 text-white";
-
-            if (tabId === 'despacho') {
-                renderDispatchList();
-                updateLoanSummary();
-            } else if (tabId === 'agenda') {
-                renderLoans();
-                drawCalendar();
-            }
-        }
-
-        /* MODULO INVENTARIO: CRUD */
-        function renderInventory() {
-            const q = document.getElementById('search-inventory').value.toLowerCase();
-            const body = document.getElementById('inventory-table-body');
-            body.innerHTML = '';
-
-            let filtered = appData.inventory;
-            
-            // Filtro por Categoría
-            if (appData.categoryFilter !== 'Todos') {
-                filtered = filtered.filter(e => e.category === appData.categoryFilter);
-            }
-
-            // Filtro por Buscador
-            if (q) {
-                filtered = filtered.filter(e => e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q) || e.id.toLowerCase().includes(q));
-            }
-
-            filtered.forEach(eq => {
-                let badgeClass = "bg-emerald-50 text-emerald-700";
-                if (eq.status === "Retirado") badgeClass = "bg-amber-50 text-amber-700";
-                if (eq.status === "En Taller") badgeClass = "bg-rose-50 text-rose-700";
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/50 transition duration-150";
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-semibold text-slate-900">${eq.name} <span class="block text-slate-400 font-mono text-[10px]">${eq.id}</span></td>
-                    <td class="py-3 px-4 text-xs text-slate-500">${eq.category}</td>
-                    <td class="py-3 px-4 text-xs max-w-xs truncate" title="${eq.desc}">${eq.desc}</td>
-                    <td class="py-3 px-4 text-right font-semibold text-slate-700">u$s ${eq.usd}</td>
-                    <td class="py-3 px-4 text-center">
-                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${badgeClass}">
-                            ${eq.status}
-                        </span>
-                    </td>
-                    <td class="py-3 px-4 text-center space-x-1.5 whitespace-nowrap">
-                        <button onclick="editEquipment('${eq.id}')" class="text-indigo-600 hover:text-indigo-900 text-xs font-semibold" title="Editar"><i class="fa-solid fa-pen-to-square text-sm"></i></button>
-                        <button onclick="toggleMaintenance('${eq.id}')" class="text-amber-600 hover:text-amber-900 text-xs font-semibold" title="Alternar Taller"><i class="fa-solid fa-screwdriver-wrench text-sm"></i></button>
-                        <button onclick="deleteEquipment('${eq.id}')" class="text-rose-600 hover:text-rose-900 text-xs font-semibold" title="Eliminar"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                    </td>
-                `;
-                body.appendChild(tr);
-            });
-        }
-
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.remove('hidden');
-            document.getElementById('modal-title').innerText = "Registrar Nuevo Activo";
-            document.getElementById('equip-form').reset();
-            document.getElementById('equip-id').value = '';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        function saveEquipment(event) {
-            event.preventDefault();
-            const id = document.getElementById('equip-id').value;
-            const name = document.getElementById('form-equip-name').value;
-            const category = document.getElementById('form-equip-category').value;
-            const usd = parseFloat(document.getElementById('form-equip-usd').value);
-            const desc = document.getElementById('form-equip-desc').value;
-
-            if (id) {
-                const eq = appData.inventory.find(e => e.id === id);
-                if (eq) {
-                    eq.name = name;
-                    eq.category = category;
-                    eq.usd = usd;
-                    eq.desc = desc;
-                }
-                showToast("Equipo modificado con éxito", "success");
-            } else {
-                const newId = "EQ" + String(appData.inventory.length + 1).padStart(3, '0');
-                appData.inventory.push({ id: newId, name, category, usd, desc, status: "Disponible" });
-                showToast("Nuevo equipo agregado al stock", "success");
-            }
-
-            saveData();
-            renderInventory();
-            closeModal('add-equip-modal');
-        }
-
-        function editEquipment(id) {
-            const eq = appData.inventory.find(e => e.id === id);
-            if (!eq) return;
-
-            document.getElementById('equip-id').value = eq.id;
-            document.getElementById('form-equip-name').value = eq.name;
-            document.getElementById('form-equip-category').value = eq.category;
-            document.getElementById('form-equip-usd').value = eq.usd;
-            document.getElementById('form-equip-desc').value = eq.desc;
-
-            document.getElementById('modal-title').innerText = "Editar Activo de Inventario";
-            document.getElementById('add-equip-modal').classList.remove('hidden');
-        }
-
-        function toggleMaintenance(id) {
-            const eq = appData.inventory.find(e => e.id === id);
-            if (!eq) return;
-
-            if (eq.status === "Disponible") {
-                eq.status = "En Taller";
-                showToast(`${eq.name} enviado a mantenimiento`, "warning");
-            } else if (eq.status === "En Taller") {
-                eq.status = "Disponible";
-                showToast(`${eq.name} reincorporado al stock`, "success");
-            } else {
-                showToast("No se puede enviar a mantenimiento un equipo en comodato.", "error");
-                return;
-            }
-            saveData();
-            renderInventory();
-        }
-
-        function deleteEquipment(id) {
-            const eq = appData.inventory.find(e => e.id === id);
-            if (!eq) return;
-            if (eq.status === "Retirado") {
-                showToast("El equipo se encuentra bajo comodato. Recíbalo primero.", "error");
-                return;
-            }
-            
-            customConfirm("¿Eliminar equipo del stock?", `¿Estás seguro de quitar permanentemente ${eq.name}?`, () => {
-                appData.inventory = appData.inventory.filter(e => e.id !== id);
-                saveData();
-                renderInventory();
-                showToast("Equipo eliminado", "success");
-            });
-        }
-
-        /* COMPROBADOR DE DISPONIBILIDAD PARA RESERVAS PLANIFICADAS */
-        function isEquipmentFreeOnPeriod(equipId, startISO, endISO) {
-            const checkStart = new Date(startISO);
-            const checkEnd = new Date(endISO);
-            
-            // Verificación si se encuentra físicamente en mantenimiento
-            const eqObj = appData.inventory.find(e => e.id === equipId);
-            if (eqObj && eqObj.status === "En Taller") {
-                return { free: false, reason: "En Taller" };
-            }
-
-            // Comprobar colisiones de rango en préstamos registrados
-            for (let loan of appData.loans) {
-                if (loan.equipments.some(e => e.id === equipId)) {
-                    const loanStart = new Date(loan.startDateISO);
-                    const loanEnd = new Date(loan.endDateISO);
-                    
-                    // Condición de solapamiento de fechas
-                    if (checkStart < loanEnd && checkEnd > loanStart) {
-                        return { free: false, reason: `Reservado por ${loan.student.name}` };
-                    }
-                }
-            }
-            return { free: true };
-        }
-
-        /* MODULO EMISIÓN (DESPACHO) */
-        function autofillStudent() {
-            const dni = document.getElementById('student-dni').value.trim();
-            if (appData.students[dni]) {
-                document.getElementById('student-name').value = appData.students[dni].name;
-                document.getElementById('student-address').value = appData.students[dni].address;
-                showToast("Datos del alumno recuperados", "success");
-            }
-        }
-
-        function renderDispatchList() {
-            const container = document.getElementById('dispatch-equip-list');
-            container.innerHTML = '';
-
-            const startDateVal = document.getElementById('loan-start-date').value;
-            const days = parseInt(document.getElementById('loan-days').value);
-            
-            if (!startDateVal) {
-                container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Seleccione una fecha de retiro para listar los equipos</p>`;
-                return;
-            }
-
-            // Calcular periodo de reserva actual
-            const startRange = new Date(startDateVal + "T12:00:00");
-            const endRange = new Date(startRange);
-            endRange.setDate(startRange.getDate() + days);
-
-            document.getElementById('selected-period-label').innerText = `Periodo: ${startRange.toLocaleDateString('es-AR')} al ${endRange.toLocaleDateString('es-AR')}`;
-
-            if (appData.inventory.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No hay equipos en el pañol. Cargue datos mediante Google Sheets.</p>`;
-                return;
-            }
-
-            appData.inventory.forEach(eq => {
-                // Comprobar la disponibilidad real del equipo para las fechas seleccionadas
-                const check = isEquipmentFreeOnPeriod(eq.id, startRange.toISOString(), endRange.toISOString());
-                const isFree = check.free;
-                
-                const div = document.createElement('div');
-                div.className = `flex items-start py-3 gap-3 px-2 rounded-lg transition duration-150 ${isFree ? 'hover:bg-slate-50' : 'bg-slate-50 opacity-60'}`;
-                
-                div.innerHTML = `
-                    <input type="checkbox" id="chk-${eq.id}" value="${eq.id}" 
-                        onchange="updateLoanSummary()" 
-                        ${isFree ? '' : 'disabled'}
-                        class="mt-1 w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500">
-                    <div class="flex-1">
-                        <label for="chk-${eq.id}" class="text-sm font-semibold text-slate-800 ${isFree ? 'cursor-pointer' : 'cursor-not-allowed'} block">
-                            ${eq.name}
-                        </label>
-                        <p class="text-xs text-slate-500 line-clamp-1">${eq.desc}</p>
-                        <div class="mt-1">
-                            ${isFree 
-                                ? '<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">Disponible para este periodo</span>'
-                                : `<span class="text-[10px] bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-ban mr-1"></i>${check.reason}</span>`
-                            }
-                        </div>
-                    </div>
-                    <span class="text-xs font-semibold text-slate-600 whitespace-nowrap">u$s ${eq.usd}</span>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function getSelectedEquipment() {
-            const checked = [];
-            const checkboxes = document.querySelectorAll('#dispatch-equip-list input[type="checkbox"]:checked');
-            checkboxes.forEach(chk => {
-                const eq = appData.inventory.find(e => e.id === chk.value);
-                if (eq) checked.push(eq);
-            });
-            return checked;
-        }
-
-        function updateLoanSummary() {
-            const selected = getSelectedEquipment();
-            
-            // Suma de precios en USD
-            const sumUSD = selected.reduce((acc, eq) => acc + eq.usd, 0);
-            document.getElementById('calc-usd-sum').innerText = `u$s ${sumUSD}`;
-
-            // Importe de seguro estimado en pesos (Multiplica dólares por tasa y tasa cambiaria)
-            const taxFactor = appData.config.insuranceTax / 100;
-            const insuranceARS = Math.round(sumUSD * taxFactor * appData.config.dollarRate);
-            document.getElementById('calc-ars-insurance').innerText = `$ ${insuranceARS.toLocaleString('es-AR')} ARS`;
-        }
-
-        function processLoan() {
-            const dni = document.getElementById('student-dni').value.trim();
-            const name = document.getElementById('student-name').value.trim();
-            const address = document.getElementById('student-address').value.trim();
-            const days = parseInt(document.getElementById('loan-days').value);
-            const startDateVal = document.getElementById('loan-start-date').value;
-            const selected = getSelectedEquipment();
-
-            if (!dni || !name || !address) {
-                showToast("Debe completar los datos del alumno.", "warning");
-                return;
-            }
-            if (!startDateVal) {
-                showToast("Debe seleccionar una fecha de retiro.", "warning");
-                return;
-            }
-            if (selected.length === 0) {
-                showToast("Seleccione al menos un equipo disponible de la lista.", "warning");
-                return;
-            }
-
-            // Registrar al alumno si es nuevo
-            if (!appData.students[dni]) {
-                appData.students[dni] = { name, address };
-            }
-
-            // CÁLCULO DE FECHAS DESDE/HASTA SEGÚN LA PLANIFICACIÓN
-            const startRange = new Date(startDateVal + "T12:00:00");
-            const endRange = new Date(startRange);
-            endRange.setDate(startRange.getDate() + days);
-
-            const totalUSD = selected.reduce((acc, eq) => acc + eq.usd, 0);
-            const insuranceARS = Math.round(totalUSD * (appData.config.insuranceTax / 100) * appData.config.dollarRate);
-            const hours = days * 24;
-
-            const newLoan = {
-                id: "PR" + String(appData.loans.length + 1).padStart(4, '0'),
-                student: { dni, name, address },
-                equipments: selected.map(e => ({ id: e.id, name: e.name, desc: e.desc, usd: e.usd })),
-                hours: hours,
-                days: days,
-                date: startRange.toLocaleDateString('es-AR'),
-                startDateISO: startRange.toISOString(),
-                endDateISO: endRange.toISOString(),
-                totalUSD: totalUSD,
-                insuranceARS: insuranceARS
-            };
-
-            appData.loans.push(newLoan);
-            saveData();
-            syncEquipmentsStatusWithLoans();
-
-            // Preparar el Comodato Oficial con la fecha planificada
-            preparePrintDocument(newLoan);
-
-            showToast("Reserva guardada con éxito. Abriendo impresión...", "success");
-
-            // Impresión del contrato
-            setTimeout(() => {
-                window.print();
-                
-                // Reiniciar campos tras la salida
-                document.getElementById('student-dni').value = '';
-                document.getElementById('student-name').value = '';
-                document.getElementById('student-address').value = '';
-                renderDispatchList();
-                updateLoanSummary();
-                switchTab('agenda');
-            }, 500);
-        }
-
-        function preparePrintDocument(loan) {
-            const listTexto = loan.equipments
-                .map(eq => `UN/A (1) ${eq.name.toUpperCase()} - Detalle: ${eq.desc}`)
-                .join('; ');
-
-            document.getElementById('print-alumno-nombre').innerText = loan.student.name.toUpperCase();
-            document.getElementById('print-alumno-domicilio').innerText = loan.student.address;
-            document.getElementById('print-equipos').innerText = listTexto;
-            document.getElementById('print-precio-usd').innerText = loan.totalUSD;
-            document.getElementById('print-horas').innerText = loan.hours;
-            document.getElementById('print-precio-ars').innerText = `$ ${loan.insuranceARS.toLocaleString('es-AR')}`;
-            document.getElementById('signature-dni').innerText = loan.student.dni;
-
-            // Extraer día y mes basándonos en la fecha de retiro de la reserva
-            const creationDate = new Date(loan.startDateISO);
-            const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-            document.getElementById('print-dia').innerText = creationDate.getDate();
-            document.getElementById('print-mes').innerText = meses[creationDate.getMonth()];
-        }
-
-        /* MODULO AGENDA & DEVOLUCIONES (LISTADO Y VISOR) */
-        function renderLoans() {
-            const body = document.getElementById('loans-table-body');
-            body.innerHTML = '';
-            
-            document.getElementById('active-loans-counter').innerText = `${appData.loans.length} Activos`;
-
-            if (appData.loans.length === 0) {
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="py-8 text-center text-slate-400 font-medium">
-                            <i class="fa-solid fa-calendar-check text-2xl block mb-2 text-slate-300"></i>
-                            No hay préstamos agendados ni activos
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            appData.loans.forEach(loan => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-                
-                const listName = loan.equipments.map(e => e.name).join(', ');
-                
-                // Formateamos las fechas de posesión calculadas
-                const start = new Date(loan.startDateISO);
-                const end = new Date(loan.endDateISO);
-                const dateRange = `
-                    <div class="font-semibold text-slate-800">${start.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric'})}</div>
-                    <div class="text-[10px] text-indigo-600 font-medium">al ${end.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric'})}</div>
-                `;
-
-                tr.innerHTML = `
-                    <td class="py-3.5 px-4 font-semibold text-slate-900">${loan.student.name}<span class="block text-slate-400 font-mono text-[9px]">DNI ${loan.student.dni}</span></td>
-                    <td class="py-3.5 px-4 text-slate-600 font-sans max-w-[200px] truncate" title="${listName}">${listName}</td>
-                    <td class="py-3.5 px-4 text-slate-600">${dateRange}</td>
-                    <td class="py-3.5 px-4 text-center"><span class="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full text-[10px]">${loan.hours} hs</span></td>
-                    <td class="py-3.5 px-4 text-center space-x-1.5 whitespace-nowrap">
-                        <button onclick="viewComodato('${loan.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1.5 rounded text-xs transition duration-150" title="Ver Comodato Digital">
-                            <i class="fa-solid fa-eye mr-1"></i> Ver
-                        </button>
-                        <button onclick="returnLoan('${loan.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1.5 rounded text-xs transition duration-150" title="Marcar Devolución">
-                            <i class="fa-solid fa-rotate-left mr-1"></i> Recibir
-                        </button>
-                    </td>
-                `;
-                body.appendChild(tr);
-            });
-        }
-
-        /* VISUALIZADOR DE COMODATO INDIVIDUAL ("VER COMODATO") */
-        function viewComodato(loanId) {
-            const loan = appData.loans.find(l => l.id === loanId);
-            if (!loan) return;
-
-            const visor = document.getElementById('visor-content');
-            
-            const listTexto = loan.equipments
-                .map(eq => `UN/A (1) <strong>${eq.name.toUpperCase()}</strong> (Valuación: u$s ${eq.usd}) - Detalle: ${eq.desc}`)
-                .join('<br>• ');
-
-            const start = new Date(loan.startDateISO);
-            const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-            const diaText = start.getDate();
-            const mesText = meses[start.getMonth()];
-
-            // Inyectamos el texto exacto con el formato del documento físico en el modal
-            visor.innerHTML = `
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px;">
-                    <h2 style="font-size: 15pt; font-weight: bold; margin: 0; letter-spacing: 1px;">CONVENIO DE RECEPCIÓN Y DEPÓSITO</h2>
-                    <p style="font-size: 8pt; margin: 5px 0 0; text-transform: uppercase; color: #333;">Estudio Audiovisual - Fundación Iberoamericana de Estudios Superiores</p>
-                </div>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    Entre la <strong>Fundación Iberoamericana de Estudios Superiores (en adelante F.I.E.S.)</strong> con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra <strong class="underline">${loan.student.name.toUpperCase()}</strong> con domicilio en <strong class="underline">${loan.student.address}</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>PRIMERA</strong> La F.I.E.S. entrega en comodato al alumno: <br>• ${listTexto}, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>SEGUNDA</strong> Dichos equipos tienen un valor total de u$s <strong>${loan.totalUSD}</strong>, el cual el alumno declara conocer y aceptar.-------------------------------------------------------------------------------------------------------------------------------- 
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>TERCERA</strong> El comodato del equipo se realiza por el término de <strong>${loan.hours}</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.------------------------------------------------- 
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>CUARTA</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos (<strong>$ ${loan.insuranceARS.toLocaleString('es-AR')}</strong>), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>QUINTA</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 18px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>SEXTA</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 25px; font-size: 10.5pt; line-height: 1.6;">
-                    <strong>SÉPTIMA</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------
-                </p>
-
-                <p style="text-align: justify; margin-bottom: 50px; font-size: 10.5pt;">
-                    En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong>${diaText}</strong> días del mes de <strong>${mesText}</strong> del 2026.
-                </p>
-
-                <!-- Bloque de Firmas -->
-                <div style="display: flex; justify-content: space-between; margin-top: 50px; text-align: center;">
-                    <div style="width: 45%; border-top: 1px solid #000; padding-top: 10px;">
-                        <p style="margin: 0; font-weight: bold; font-size: 10pt; font-family: sans-serif;">Firma del Alumno</p>
-                        <p style="margin: 5px 0 0; font-size: 9pt; color: #555; font-family: sans-serif;">DNI: ${loan.student.dni}</p>
-                    </div>
-                    <div style="width: 45%; border-top: 1px solid #000; padding-top: 10px;">
-                        <p style="margin: 0; font-weight: bold; font-size: 10pt; font-family: sans-serif;">Sello y Firma F.I.E.S.</p>
-                        <p style="margin: 5px 0 0; font-size: 9pt; color: #555; font-family: sans-serif;">Autorizado por el Pañolero</p>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('btn-print-from-modal').onclick = function() {
-                preparePrintDocument(loan);
-                window.print();
-            };
-
-            openModal('view-comodato-modal');
-        }
-
-        function returnLoan(loanId) {
-            const loan = appData.loans.find(l => l.id === loanId);
-            if (!loan) return;
-
-            customConfirm("Devolución de Equipamiento", `¿Dar por recibidos todos los equipos del alumno ${loan.student.name}?`, () => {
-                appData.loans = appData.loans.filter(l => l.id !== loanId);
-                saveData();
-                syncEquipmentsStatusWithLoans();
-                renderLoans();
-                renderInventory();
-                drawCalendar();
-                showToast("Equipos ingresados de vuelta al stock físico", "success");
-            });
-        }
-
-        /* MODULO DE CALENDARIO DINÁMICO */
-        function navigateMonth(direction) {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
-            drawCalendar();
-        }
-
-        function drawCalendar() {
-            const calendarHeader = document.getElementById('calendar-month-year');
-            const calendarGrid = document.getElementById('dynamic-calendar');
-            calendarGrid.innerHTML = '';
-
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth();
-
-            const mesesNombres = [
-                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-            ];
-            calendarHeader.innerText = `${mesesNombres[month]} ${year}`;
-
-            // Cabecera de días de la semana
-            const diasSemana = ["D", "L", "M", "M", "J", "V", "S"];
-            diasSemana.forEach(d => {
-                const el = document.createElement('div');
-                el.className = "font-semibold text-slate-400 py-1 text-[11px]";
-                el.innerText = d;
-                calendarGrid.appendChild(el);
-            });
-
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const totalDays = new Date(year, month + 1, 0).getDate();
-            const prevTotalDays = new Date(year, month, 0).getDate();
-
-            // Rellenar días del mes anterior
-            for (let i = firstDayIndex; i > 0; i--) {
-                const dayEl = document.createElement('div');
-                dayEl.className = "text-slate-300 py-2 text-[11px] select-none pointer-events-none";
-                dayEl.innerText = prevTotalDays - i + 1;
-                calendarGrid.appendChild(dayEl);
-            }
-
-            // Dibujar días de calendario del mes en curso
-            const today = new Date();
-
-            for (let day = 1; day <= totalDays; day++) {
-                const dayEl = document.createElement('div');
-                dayEl.className = "hover:bg-slate-100 rounded p-1 py-1.5 relative flex flex-col items-center justify-center cursor-pointer transition text-[11px] h-8 font-medium";
-                dayEl.innerText = day;
-
-                const thisDate = new Date(year, month, day);
-
-                // Comprobar si hoy coincide con esta celda
-                const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
-                if (isToday) {
-                    dayEl.className += " bg-indigo-600 text-white hover:bg-indigo-700 font-extrabold shadow-sm";
-                }
-
-                // Cruzar con reservas planificadas a futuro o en el presente
-                const loansOnThisDay = [];
-                appData.loans.forEach(loan => {
-                    const start = new Date(loan.startDateISO);
-                    start.setHours(0,0,0,0);
-                    const end = new Date(loan.endDateISO);
-                    end.setHours(23,59,59,999);
-
-                    if (thisDate >= start && thisDate <= end) {
-                        loansOnThisDay.push(loan);
-                    }
-                });
-
-                if (loansOnThisDay.length > 0) {
-                    if (isToday) {
-                        const dot = document.createElement('span');
-                        dot.className = "absolute bottom-0.5 w-1 h-1 bg-amber-400 rounded-full";
-                        dayEl.appendChild(dot);
-                    } else {
-                        dayEl.className += " bg-amber-50 border border-amber-300 text-amber-900";
-                        const dot = document.createElement('span');
-                        dot.className = "absolute bottom-0.5 w-1 h-1 bg-amber-500 rounded-full";
-                        dayEl.appendChild(dot);
-                    }
-
-                    // Títulos en el tooltip nativo
-                    const eqNames = loansOnThisDay.map(l => `${l.student.name}: ${l.equipments.map(e => e.name).join(', ')}`).join(' | ');
-                    dayEl.setAttribute('title', `Retiros activos:\n${eqNames}`);
-                }
-
-                calendarGrid.appendChild(dayEl);
-            }
-        }
-
-        window.onload = function() {
-            const lastSession = localStorage.getItem('uai_session');
-            if (lastSession === 'active') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                initApp();
-            }
-        };
-    </script>
+      `;
+
+      paper.innerHTML = contratoCompilado;
+
+      // Configuramos el enlace directo a Google Calendar
+      const gcalBtn = document.getElementById('btn-add-calendar');
+      gcalBtn.href = generateGoogleCalendarURL(loan);
+
+      modal.classList.remove('hidden');
+    }
+
+    function cerrarVisorComodato() {
+      document.getElementById('modal-comodato').classList.add('hidden');
+    }
+
+    // Imprime el contrato renderizado con la estructura del navegador
+    function imprimirComodatoDesdeModal() {
+      const printArea = document.getElementById('print-area');
+      const paperHtml = document.getElementById('modal-paper-content').innerHTML;
+
+      printArea.innerHTML = paperHtml;
+      window.print();
+    }
+
+    // Genera la URL para añadir directamente a Google Calendar sin OAuth
+    function generateGoogleCalendarURL(loan) {
+      const dateStart = new Date(loan.fechaRetiroISO);
+      const dateEnd = new Date(loan.fechaDevolucionISO);
+
+      // Formato para Calendar: AAAAMMDDTHHMMSSZ
+      const formatGCalDate = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+      
+      const title = encodeURIComponent(`Préstamo UAI: ${loan.alumno.nombre}`);
+      const equipmentsList = loan.equipos.map(e => `- ${e.nombre}`).join('%0A');
+      const details = encodeURIComponent(`Equipos Retirados:\n${loan.equipos.map(e => `- ${e.nombre}`).join('\n')}\n\nDomicilio Alumno: ${loan.alumno.domicilio}\nSeguro asignado: $ ${loan.totalARS.toLocaleString('es-AR')}`);
+      
+      const dates = `${formatGCalDate(dateStart)}/${formatGCalDate(dateEnd)}`;
+
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&sf=true&output=xml`;
+    }
+
+    // ================= MODAL DE CONFIRMACIÓN CUSTOMIZADO =================
+    function openConfirmModal(text, onConfirm) {
+      document.getElementById('confirm-text').innerText = text;
+      document.getElementById('modal-confirm').classList.remove('hidden');
+      confirmCallback = onConfirm;
+    }
+
+    function closeConfirmModal(accepted) {
+      document.getElementById('modal-confirm').classList.add('hidden');
+      if (accepted && confirmCallback) {
+        confirmCallback();
+      }
+      confirmCallback = null;
+    }
+
+    // Listener para confirmación afirmativa
+    document.getElementById('btn-confirm-yes').onclick = function() {
+      closeConfirmModal(true);
+    };
+
+    // ================= SISTEMA DE TOASTS FLOTANTES =================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-900 border-slate-800';
+      let iconColor = 'text-blue-400';
+      let icon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+
+      if (type === 'success') {
+        bg = 'bg-emerald-950/95 border-emerald-800 text-emerald-100';
+        iconColor = 'text-emerald-400';
+        icon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      } else if (type === 'error') {
+        bg = 'bg-red-950/95 border-red-800 text-red-100';
+        iconColor = 'text-red-400';
+        icon = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+      }
+
+      toast.className = `p-4 rounded-xl border flex items-center space-x-3 shadow-lg pointer-events-auto transition duration-300 transform translate-y-2 opacity-0 ${bg}`;
+      toast.innerHTML = `
+        <span class="${iconColor}">${icon}</span>
+        <span class="text-xs font-semibold leading-relaxed">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Animación de entrada
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      // Desvanecimiento automático
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-1');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 4000);
+    }
+  </script>
 </body>
 </html>
