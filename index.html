@@ -297,7 +297,7 @@
               <h4 class="font-bold text-indigo-800 text-sm flex items-center"><svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Sincronización en Tiempo Real</h4>
               <p class="text-xs text-indigo-600 mt-1">Para ver el pañol en tu celular, debes usar la URL iCal secreta que provee Google Calendar nativamente desde sus ajustes.</p>
             </div>
-            <a href="https://support.google.com/calendar/answer/37648?hl=es" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition whitespace-nowrap">Ver tutorial de Google</a>
+            <a href="https://support.google.com/calendar/answer/37648?hl=es-419" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition whitespace-nowrap">Ver tutorial de Google</a>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -545,21 +545,14 @@
       return cl(eqCat) === cl(filterCat);
     }
 
-    // Nuevo motor de envío de peticiones asíncronas para eludir bloqueos de CORS
     async function sendToGoogleSheets(payload) {
       if (!GOOGLE_APPS_SCRIPT_URL) return;
       try {
         await fetch(GOOGLE_APPS_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
+          method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
-      } catch (err) {
-        console.error("Error contactando el servidor:", err);
-      }
+      } catch (err) { console.error("Error contactando el servidor:", err); }
     }
 
     async function forzarSincronizacion() { showToast("Estableciendo conexión...", "info"); await syncAllFromGoogleSheets(true); }
@@ -574,7 +567,6 @@
       return merged;
     }
 
-    // Parseador robusto para CSV para impedir pérdida de textos mixtos de Google Sheets
     function parseCSV(str) {
       const arr = []; let quote = false; let row = [], col = "";
       for (let c = 0; c < str.length; c++) {
@@ -598,7 +590,6 @@
       document.getElementById('txt-last-sync').innerText = "Descargando datos...";
 
       try {
-        // Obtenemos formato CSV puro en lugar de JSON (Evita que el texto en la columna de Detalles se detecte como numero y se vuelva nulo)
         const responseEquipos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=EQUIPOS`);
         const dataEquipos = parseCSV(await responseEquipos.text());
         
@@ -612,12 +603,8 @@
           else if (rawE.includes("transito") || rawE.includes("alquilado") || rawE.includes("retirado")) est = "En transito";
 
           parsedEquipos.push({
-            id: row[0] || `EQ-${100+idx}`,
-            nombre: nom,
-            categoria: row[2] || "General",
-            descripcion_detallada: row[3] || "",
-            precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0,
-            estado: est
+            id: row[0] || `EQ-${100+idx}`, nombre: nom, categoria: row[2] || "General",
+            descripcion_detallada: row[3] || "", precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0, estado: est
           });
         });
 
@@ -631,7 +618,25 @@
           });
         } catch (e) {}
 
+        let parsedReservas = [];
+        try {
+          const responseReservas = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=RESERVAS`);
+          const dataReservas = parseCSV(await responseReservas.text());
+          dataReservas.forEach((row, idx) => {
+            if (idx === 0 || !row || row.length < 6) return;
+            const jsonStr = row[5];
+            if (jsonStr) {
+              try {
+                const co = JSON.parse(jsonStr); const sheetState = row[4];
+                if (sheetState === 'CERRADO') co.estado = 'Devuelto'; parsedReservas.push(co);
+              } catch(e) {}
+            }
+          });
+        } catch (e) {}
+
         DB_EQUIPOS = mergeInventoryState(parsedEquipos); DB_ALUMNOS = mergeAlumnosState(parsedAlumnos);
+        if (parsedReservas.length > 0) DB_COMODATOS = parsedReservas;
+
         extractAndRenderCategories(); localStorage.setItem('uai_last_sync_time', now.toString()); document.getElementById('txt-last-sync').innerText = "Sincronizado ahora";
         showToast("Inventario actualizado", "success"); persistData(); renderAll();
       } catch (err) {
@@ -693,13 +698,10 @@
         eq.id = document.getElementById('edit-codigo').value.trim(); eq.nombre = document.getElementById('edit-nombre').value.trim(); eq.categoria = document.getElementById('edit-categoria').value.trim(); eq.precio_usd = parseFloat(document.getElementById('edit-precio').value) || 0; eq.estado = document.getElementById('edit-estado').value; eq.descripcion_detallada = document.getElementById('edit-detalle').value.trim();
         persistData(); extractAndRenderCategories(); renderAll(); cerrarEditarEquipo(); showToast("Enviando a Sheets...", "info");
         
-        // Usamos la nueva funcion transparente a CORS
         await sendToGoogleSheets({ 
           action: "editEquipment", 
-          origCodigo: document.getElementById('edit-original-codigo').value, 
-          origNombre: document.getElementById('edit-original-nombre').value, 
-          codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, 
-          precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada 
+          origCodigo: document.getElementById('edit-original-codigo').value, origNombre: document.getElementById('edit-original-nombre').value, 
+          codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada 
         });
         showToast("Guardado completado.", "success");
       }
@@ -890,6 +892,26 @@
       const nCo = { id: `CO-${2600 + DB_COMODATOS.length}`, alumno: { ...al }, equipos: pendingLoanData.equipos.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd, qty: e.qty })), fechaRetiroISO: pendingLoanData.fechaRetiroISO, fechaDevolucionISO: pendingLoanData.fechaDevolucionISO, horas: pendingLoanData.horas, totalUSD: pendingLoanData.totalUSD, estado: 'Activo' };
       DB_COMODATOS.push(nCo);
       
+      const now = new Date();
+      const fR = new Date(nCo.fechaRetiroISO);
+      const fD = new Date(nCo.fechaDevolucionISO);
+      let estadoReserva = fR > now ? "A RETIRAR" : "EN TRANSITO";
+      
+      const idAlumnoText = `${nCo.id} / ${nCo.alumno.nombre}`;
+      const eqText = nCo.equipos.map(e => `${e.qty}x ${e.nombre}`).join(', ');
+      const rangoText = `${fR.toLocaleDateString('es-AR')} al ${fD.toLocaleDateString('es-AR')}`;
+      
+      await sendToGoogleSheets({ 
+        action: "saveReservation", 
+        id: nCo.id, 
+        idAlumno: idAlumnoText, 
+        equipos: eqText, 
+        rango: rangoText, 
+        garantia: `u$s ${nCo.totalUSD}`, 
+        estado: estadoReserva, 
+        payload: JSON.stringify(nCo) 
+      });
+
       pendingLoanData.equipos.forEach(async (e) => {
         let eqB = DB_EQUIPOS.find(x => x.id === e.id);
         if(eqB) {
@@ -904,8 +926,8 @@
     function abrirVisorComodato(loan) {
       const paper = document.getElementById('modal-paper-content'); const fR = new Date(loan.fechaRetiroISO);
       
-      // Armamos la lista mapeando cantidades a texto
-      const eqConcat = loan.equipos.map(e => `${numToText(e.qty)} (${e.qty}) ${e.nombre.toUpperCase()} (${e.descripcion})`).join('; ') + ".-";
+      // Armamos la lista mapeando cantidades a texto, usando UNICAMENTE el Detalle en Comodato
+      const eqConcat = loan.equipos.map(e => `${numToText(e.qty)} (${e.qty}) ${e.descripcion.toUpperCase()}`).join('; ') + ".-";
       
       paper.innerHTML = `
         <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
@@ -930,6 +952,9 @@
       const co = DB_COMODATOS.find(c => c.id === id); if (!co) return;
       openConfirmModal(`¿Deseas registrar la devolución de equipos para el Comodato ${co.id}?`, () => {
         co.estado = 'Devuelto';
+
+        sendToGoogleSheets({ action: "updateReservationState", id: co.id, estado: "CERRADO" });
+
         co.equipos.forEach(async (e) => {
             let eqB = DB_EQUIPOS.find(x => x.id === e.id);
             if(eqB) {
