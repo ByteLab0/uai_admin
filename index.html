@@ -219,7 +219,7 @@
           <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex flex-wrap gap-2" id="inv-tabs"></div>
             <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-              <button onclick="forzarSincronizacion()" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md transition flex items-center space-x-1.5 w-full sm:w-auto justify-center">
+              <button onclick="syncAllFromGoogleSheets(true)" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md transition flex items-center space-x-1.5 w-full sm:w-auto justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12H16M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path></svg>
                 <span>Actualizar Google Sheets</span>
               </button>
@@ -493,10 +493,13 @@
       return w[n] || n.toString();
     }
 
-    // Funciones del Sistema
     window.onload = async function() {
-      setTopbarDate(); document.getElementById('loan-fecha-retiro').valueAsDate = new Date(); calcularFechasPrestamo();
-      inicializarBaseDatos(); await syncAllFromGoogleSheets(false); renderAll();
+      setTopbarDate(); 
+      document.getElementById('loan-fecha-retiro').valueAsDate = new Date(); 
+      calcularFechasPrestamo();
+      filterAgenda('Activos');
+      inicializarBaseDatos(); 
+      await syncAllFromGoogleSheets(); 
     };
 
     function toggleSidebar() {
@@ -509,14 +512,14 @@
     function setTopbarDate() { document.getElementById('topbar-date').innerText = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
 
     function inicializarBaseDatos() {
-      DB_EQUIPOS = JSON.parse(localStorage.getItem('uai_equipos')) || []; DB_ALUMNOS = JSON.parse(localStorage.getItem('uai_alumnos')) || [];
-      DB_COMODATOS = JSON.parse(localStorage.getItem('uai_comodatos')) || []; DB_KITS = JSON.parse(localStorage.getItem('uai_kits')) || [];
-      extractAndRenderCategories(); renderKitsDropdown();
+      DB_KITS = JSON.parse(localStorage.getItem('uai_kits')) || [];
     }
 
-    function persistData() {
-      localStorage.setItem('uai_equipos', JSON.stringify(DB_EQUIPOS)); localStorage.setItem('uai_alumnos', JSON.stringify(DB_ALUMNOS));
-      localStorage.setItem('uai_comodatos', JSON.stringify(DB_COMODATOS)); localStorage.setItem('uai_kits', JSON.stringify(DB_KITS));
+    function getCellValue(cell) {
+      if (!cell) return "";
+      if (cell.f !== undefined && cell.f !== null) return cell.f.toString().trim();
+      if (cell.v !== undefined && cell.v !== null) return cell.v.toString().trim();
+      return "";
     }
 
     function getEstadoActualEquipo(eq) {
@@ -549,66 +552,45 @@
       if (!GOOGLE_APPS_SCRIPT_URL) return;
       try {
         await fetch(GOOGLE_APPS_SCRIPT_URL, {
-          method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
+          method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
         });
       } catch (err) { console.error("Error contactando el servidor:", err); }
     }
 
-    async function forzarSincronizacion() { showToast("Estableciendo conexión...", "info"); await syncAllFromGoogleSheets(true); }
-
-    function mergeAlumnosState(mappedAlumnos) {
-      if (DB_ALUMNOS.length === 0) return mappedAlumnos;
-      const merged = [...mappedAlumnos];
-      DB_ALUMNOS.forEach(localAl => {
-        const idx = merged.findIndex(m => m.dni.toString().trim() === localAl.dni.toString().trim());
-        if (idx === -1) merged.push(localAl); else merged[idx] = localAl;
-      });
-      return merged;
+    function parseCSV(text) {
+      let lines = []; let row = [""]; let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+          let c = text[i], next = text[i+1];
+          if (c === '"') {
+              if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; } 
+              else { inQuotes = !inQuotes; }
+          } else if (c === ',' && !inQuotes) { row.push(''); } 
+          else if ((c === '\r' || c === '\n') && !inQuotes) {
+              if (c === '\r' && next === '\n') { i++; }
+              lines.push(row); row = [''];
+          } else { row[row.length - 1] += c; }
+      }
+      if (row.length > 1 || row[0] !== '') { lines.push(row); }
+      return lines;
     }
 
-    function parseCSV(str) {
-      const arr = []; let quote = false; let row = [], col = "";
-      for (let c = 0; c < str.length; c++) {
-          let cc = str[c], nc = str[c+1];
-          if (cc === '"' && quote && nc === '"') { col += '"'; c++; }
-          else if (cc === '"') { quote = !quote; }
-          else if (cc === ',' && !quote) { row.push(col.trim()); col = ""; }
-          else if (cc === '\n' && !quote) { row.push(col.trim()); arr.push(row); col = ""; row = []; }
-          else if (cc === '\r' && !quote) { /* ignore */ }
-          else { col += cc; }
-      }
-      if (col || row.length > 0) { row.push(col.trim()); arr.push(row); }
-      return arr;
-    }
-
-    async function syncAllFromGoogleSheets(force = false) {
-      const lastSync = localStorage.getItem('uai_last_sync_time'); const now = Date.now();
-      if (!force && lastSync && (now - Number(lastSync) < 24 * 60 * 60 * 1000) && DB_EQUIPOS.length > 0) {
-        document.getElementById('txt-last-sync').innerText = `Sincronizado hace ${Math.round((now - Number(lastSync)) / 3600000)} hs`; return;
-      }
+    async function syncAllFromGoogleSheets() {
       document.getElementById('txt-last-sync').innerText = "Descargando datos...";
-
       try {
         const responseEquipos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=EQUIPOS`);
         const dataEquipos = parseCSV(await responseEquipos.text());
-        
         const parsedEquipos = [];
         dataEquipos.forEach((row, idx) => {
           if (idx === 0 || !row || row.length < 2) return;
           const nom = row[1]; if (!nom) return;
-          const rawE = (row[5] || "").toLowerCase();
-          let est = "Disponible";
-          if (rawE.includes("mantenimiento") || rawE.includes("taller")) est = "Mantenimiento";
-          else if (rawE.includes("transito") || rawE.includes("alquilado") || rawE.includes("retirado")) est = "En transito";
-
           parsedEquipos.push({
             id: row[0] || `EQ-${100+idx}`, nombre: nom, categoria: row[2] || "General",
-            descripcion_detallada: row[3] || "", precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0, estado: est
+            descripcion_detallada: row[3] || "", precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0,
+            estado: (row[5] || "Disponible").trim()
           });
         });
 
-        const parsedAlumnos = [];
+        let parsedAlumnos = [];
         try {
           const responseAlumnos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=DATOS`);
           const dataAlumnos = parseCSV(await responseAlumnos.text());
@@ -623,34 +605,32 @@
           const responseReservas = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=RESERVAS`);
           const dataReservas = parseCSV(await responseReservas.text());
           dataReservas.forEach((row, idx) => {
-            if (idx === 0 || !row || row.length < 6) return;
-            const jsonStr = row[5];
+            if (idx === 0 || !row) return;
+            const sheetState = row[4];
+            let jsonStr = row[5];
             if (jsonStr) {
               try {
-                const co = JSON.parse(jsonStr); const sheetState = row[4];
-                if (sheetState === 'CERRADO') co.estado = 'Devuelto'; parsedReservas.push(co);
+                if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) jsonStr = jsonStr.substring(1, jsonStr.length - 1);
+                const co = JSON.parse(jsonStr);
+                if (sheetState === 'CERRADO') co.estado = 'Devuelto'; else co.estado = 'Activo';
+                parsedReservas.push(co);
               } catch(e) {}
             }
           });
         } catch (e) {}
 
-        DB_EQUIPOS = mergeInventoryState(parsedEquipos); DB_ALUMNOS = mergeAlumnosState(parsedAlumnos);
-        if (parsedReservas.length > 0) DB_COMODATOS = parsedReservas;
+        DB_EQUIPOS = parsedEquipos; 
+        DB_ALUMNOS = parsedAlumnos; 
+        DB_COMODATOS = parsedReservas;
 
-        extractAndRenderCategories(); localStorage.setItem('uai_last_sync_time', now.toString()); document.getElementById('txt-last-sync').innerText = "Sincronizado ahora";
-        showToast("Inventario actualizado", "success"); persistData(); renderAll();
+        extractAndRenderCategories(); renderKitsDropdown();
+        const now = new Date();
+        document.getElementById('txt-last-sync').innerText = "Sincronizado hoy " + now.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'});
+        showToast("Base de datos sincronizada", "success"); 
+        renderAll();
       } catch (err) {
         document.getElementById('txt-last-sync').innerText = "Error en sync"; showToast("Fallo conectando a Sheets", "error");
       }
-    }
-
-    function mergeInventoryState(newEquipos) {
-      if (DB_EQUIPOS.length === 0) return newEquipos;
-      return newEquipos.map(newEq => {
-        const oldEq = DB_EQUIPOS.find(o => o.id === newEq.id);
-        if (oldEq && oldEq.estado === 'En transito') newEq.estado = 'En transito';
-        return newEq;
-      });
     }
 
     function extractAndRenderCategories() {
@@ -674,7 +654,7 @@
       if (selectedItems.length === 0) return showToast("Selecciona equipos primero para armar el kit.", "error");
       const n = prompt("Nombre del Kit (Ej. Kit Entrevista):"); if (!n) return;
       DB_KITS.push({ id: 'K-'+Date.now(), nombre: n, items: JSON.parse(JSON.stringify(selectedItems)) });
-      persistData(); renderKitsDropdown(); showToast("Kit guardado", "success");
+      localStorage.setItem('uai_kits', JSON.stringify(DB_KITS)); renderKitsDropdown(); showToast("Kit guardado", "success");
     }
 
     function cargarKit() {
@@ -696,13 +676,8 @@
       const eq = DB_EQUIPOS.find(e => e.id === document.getElementById('edit-original-codigo').value);
       if (eq) {
         eq.id = document.getElementById('edit-codigo').value.trim(); eq.nombre = document.getElementById('edit-nombre').value.trim(); eq.categoria = document.getElementById('edit-categoria').value.trim(); eq.precio_usd = parseFloat(document.getElementById('edit-precio').value) || 0; eq.estado = document.getElementById('edit-estado').value; eq.descripcion_detallada = document.getElementById('edit-detalle').value.trim();
-        persistData(); extractAndRenderCategories(); renderAll(); cerrarEditarEquipo(); showToast("Enviando a Sheets...", "info");
-        
-        await sendToGoogleSheets({ 
-          action: "editEquipment", 
-          origCodigo: document.getElementById('edit-original-codigo').value, origNombre: document.getElementById('edit-original-nombre').value, 
-          codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada 
-        });
+        extractAndRenderCategories(); renderAll(); cerrarEditarEquipo(); showToast("Enviando a Sheets...", "info");
+        await sendToGoogleSheets({ action: "editEquipment", origCodigo: document.getElementById('edit-original-codigo').value, origNombre: document.getElementById('edit-original-nombre').value, codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada });
         showToast("Guardado completado.", "success");
       }
     }
@@ -920,13 +895,13 @@
         }
       });
 
-      selectedItems = []; persistData(); cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
+      selectedItems = []; cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
     }
 
     function abrirVisorComodato(loan) {
       const paper = document.getElementById('modal-paper-content'); const fR = new Date(loan.fechaRetiroISO);
       
-      // Armamos la lista mapeando cantidades a texto, usando UNICAMENTE el Detalle en Comodato
+      // Armamos la lista mapeando cantidades a texto, usando UNICAMENTE el Detalle en Comodato (sin el nombre principal del equipo)
       const eqConcat = loan.equipos.map(e => `${numToText(e.qty)} (${e.qty}) ${e.descripcion.toUpperCase()}`).join('; ') + ".-";
       
       paper.innerHTML = `
@@ -962,7 +937,7 @@
                 await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "Disponible", detalle: e.descripcion_detallada });
             }
         });
-        persistData(); showToast("Devolución registrada correctamente", "success"); renderAll();
+        showToast("Devolución registrada correctamente", "success"); renderAll();
       });
     }
 
