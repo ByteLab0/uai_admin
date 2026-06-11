@@ -73,13 +73,17 @@
       </nav>
 
       <div class="p-4 border-t border-slate-800 bg-slate-950/50">
-        <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center justify-between mb-2">
           <div class="flex items-center space-x-1.5 flex-shrink-0">
             <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
             <span class="sidebar-text text-xs text-slate-300 font-medium whitespace-nowrap">Google Sheets</span>
           </div>
         </div>
-        <p id="txt-last-sync" class="sidebar-text text-[11px] text-slate-400 italic truncate">Sincronizando...</p>
+        <p id="txt-last-sync" class="sidebar-text text-[11px] text-slate-400 italic truncate mb-3">Sincronizando...</p>
+        <button onclick="forzarSincronizacion()" class="sidebar-text w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 rounded-lg transition duration-150 flex items-center justify-center space-x-2 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12H16M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path></svg>
+          <span>Actualizar Datos</span>
+        </button>
       </div>
     </aside>
 
@@ -162,28 +166,31 @@
 
             </div>
 
-            <!-- Derecha: Inventario -->
+            <!-- Derecha: Inventario y Kits -->
             <div class="xl:col-span-8 flex flex-col space-y-6">
               
-              <!-- Herramientas de Kits -->
-              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
-                <div class="flex items-center space-x-2">
-                  <span class="text-xs font-bold text-slate-500 uppercase">Mis Kits:</span>
-                  <select id="dispatch-kits-dropdown" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none transition">
-                    <option value="">-- Seleccionar Kit --</option>
-                  </select>
-                  <button onclick="cargarKit()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">Cargar</button>
+              <!-- HERRAMIENTAS DE KITS (REDISEÑADAS) -->
+              <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Mis Kits Rápidos
+                  </h3>
+                  <button onclick="guardarKit()" class="text-[10px] text-indigo-600 font-semibold hover:underline flex items-center">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Guardar selección actual
+                  </button>
                 </div>
-                <button onclick="guardarKit()" class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center transition">
-                  <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                  Guardar selección como Kit
-                </button>
+                <div id="dispatch-kits-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-36 overflow-y-auto">
+                  <!-- Renderizado dinámico de kits -->
+                </div>
               </div>
 
+              <!-- BUSCADOR -->
               <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div class="flex flex-col sm:flex-row gap-3">
                   <div class="flex-1 relative">
-                    <input type="text" id="dispatch-search" placeholder="Buscar equipo..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderDispatchInventory()">
+                    <input type="text" id="dispatch-search" placeholder="Buscar equipo específico..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition" oninput="renderDispatchInventory()">
                     <span class="absolute left-3 top-2.5 text-slate-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span>
                   </div>
                   <select id="dispatch-category-filter" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none transition" onchange="renderDispatchInventory()">
@@ -192,6 +199,7 @@
                 </div>
               </div>
 
+              <!-- GRILLA DE EQUIPOS -->
               <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[300px]">
                 <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
                   <span class="text-xs font-bold text-slate-500 uppercase">Equipos en Stock</span>
@@ -221,10 +229,6 @@
           <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex flex-wrap gap-2" id="inv-tabs"></div>
             <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-              <button onclick="syncAllFromGoogleSheets(true)" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-md transition flex items-center space-x-1.5 w-full sm:w-auto justify-center">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 12H16M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path></svg>
-                <span>Actualizar Google Sheets</span>
-              </button>
               <div class="relative w-full md:w-64">
                 <input type="text" id="inventory-search" placeholder="Filtrar por nombre o código..." class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none transition" oninput="renderInventoryPanel()">
               </div>
@@ -299,7 +303,7 @@
               <h4 class="font-bold text-indigo-800 text-sm flex items-center"><svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Sincronización en Tiempo Real</h4>
               <p class="text-xs text-indigo-600 mt-1">Para ver el pañol en tu celular, debes usar la URL iCal secreta que provee Google Calendar nativamente desde sus ajustes.</p>
             </div>
-            <a href="https://support.google.com/calendar/answer/37648?hl=es-419" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition whitespace-nowrap">Ver tutorial de Google</a>
+            <a href="https://support.google.com/calendar/answer/37648?hl=es" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition whitespace-nowrap">Ver tutorial de Google</a>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -349,24 +353,16 @@
       <div class="flex-1 overflow-y-auto p-8 bg-slate-100">
         <div class="bg-white shadow-md rounded-lg max-w-2xl mx-auto p-12 print-font text-xs text-justify text-slate-800 leading-relaxed border border-slate-200" id="modal-paper-content"></div>
       </div>
-      <div class="bg-slate-50 border-t border-slate-200 px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <a id="btn-add-calendar" target="_blank" href="#" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          <span>Añadir a Google Calendar</span>
-        </a>
-        <div class="flex space-x-3 w-full sm:w-auto">
-          <button onclick="cerrarVisorComodato()" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition duration-150">
-            Cerrar
-          </button>
-          <button id="btn-download-pdf" class="w-1/2 sm:w-auto bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition duration-150">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            <span>Descargar PDF</span>
-          </button>
-          <button onclick="imprimirComodatoDesdeModal()" class="w-1/2 sm:w-auto bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center justify-center space-x-1.5 transition duration-150">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            <span>Imprimir A4</span>
-          </button>
-        </div>
+      <div class="bg-slate-50 border-t border-slate-200 px-8 py-4 flex justify-end space-x-3">
+        <button onclick="cerrarVisorComodato()" class="px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition">Cerrar</button>
+        <button id="btn-download-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>Descargar PDF</span>
+        </button>
+        <button onclick="imprimirComodatoDesdeModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          <span>Imprimir A4</span>
+        </button>
       </div>
     </div>
   </div>
@@ -497,6 +493,7 @@
     let pendingLoanData = null;
     let DB_EQUIPOS = [], DB_ALUMNOS = [], DB_COMODATOS = [], DB_KITS = [];
     let selectedItems = []; 
+    let selectedKits = [];
     let calendarDate = new Date();
     let activeInventoryCategory = 'Todos';
     let activeAgendaFilter = 'Activos'; 
@@ -507,13 +504,11 @@
       return w[n] || n.toString();
     }
 
+    // Funciones del Sistema
     window.onload = async function() {
-      setTopbarDate(); 
-      document.getElementById('loan-fecha-retiro').valueAsDate = new Date(); 
-      calcularFechasPrestamo();
+      setTopbarDate(); document.getElementById('loan-fecha-retiro').valueAsDate = new Date(); calcularFechasPrestamo();
       filterAgenda('Activos');
-      inicializarBaseDatos(); 
-      await syncAllFromGoogleSheets(); 
+      inicializarBaseDatos(); await syncAllFromGoogleSheets(false); renderAll();
     };
 
     function toggleSidebar() {
@@ -526,14 +521,19 @@
     function setTopbarDate() { document.getElementById('topbar-date').innerText = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
 
     function inicializarBaseDatos() {
+      DB_EQUIPOS = JSON.parse(localStorage.getItem('uai_equipos')) || []; 
+      DB_ALUMNOS = JSON.parse(localStorage.getItem('uai_alumnos')) || [];
       DB_KITS = JSON.parse(localStorage.getItem('uai_kits')) || [];
+      DB_COMODATOS = []; // Forzamos vaciado local para que provenga solo de Google Sheets
+
+      extractAndRenderCategories(); renderKits();
     }
 
-    function getCellValue(cell) {
-      if (!cell) return "";
-      if (cell.f !== undefined && cell.f !== null) return cell.f.toString().trim();
-      if (cell.v !== undefined && cell.v !== null) return cell.v.toString().trim();
-      return "";
+    function persistData() {
+      localStorage.setItem('uai_equipos', JSON.stringify(DB_EQUIPOS)); 
+      localStorage.setItem('uai_alumnos', JSON.stringify(DB_ALUMNOS));
+      localStorage.setItem('uai_kits', JSON.stringify(DB_KITS));
+      // La agenda no se persiste en local
     }
 
     function getEstadoActualEquipo(eq) {
@@ -562,6 +562,7 @@
       return cl(eqCat) === cl(filterCat);
     }
 
+    // Nuevo motor de envío de peticiones asíncronas para eludir bloqueos de CORS
     async function sendToGoogleSheets(payload) {
       if (!GOOGLE_APPS_SCRIPT_URL) return;
       try {
@@ -571,40 +572,65 @@
       } catch (err) { console.error("Error contactando el servidor:", err); }
     }
 
-    function parseCSV(text) {
-      let lines = []; let row = [""]; let inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-          let c = text[i], next = text[i+1];
-          if (c === '"') {
-              if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; } 
-              else { inQuotes = !inQuotes; }
-          } else if (c === ',' && !inQuotes) { row.push(''); } 
-          else if ((c === '\r' || c === '\n') && !inQuotes) {
-              if (c === '\r' && next === '\n') { i++; }
-              lines.push(row); row = [''];
-          } else { row[row.length - 1] += c; }
-      }
-      if (row.length > 1 || row[0] !== '') { lines.push(row); }
-      return lines;
+    async function forzarSincronizacion() { showToast("Estableciendo conexión...", "info"); await syncAllFromGoogleSheets(true); }
+
+    function mergeAlumnosState(mappedAlumnos) {
+      if (DB_ALUMNOS.length === 0) return mappedAlumnos;
+      const merged = [...mappedAlumnos];
+      DB_ALUMNOS.forEach(localAl => {
+        const idx = merged.findIndex(m => m.dni.toString().trim() === localAl.dni.toString().trim());
+        if (idx === -1) merged.push(localAl); else merged[idx] = localAl;
+      });
+      return merged;
     }
 
-    async function syncAllFromGoogleSheets() {
+    // Parseador robusto para CSV para impedir pérdida de textos mixtos de Google Sheets
+    function parseCSV(str) {
+      const arr = []; let quote = false; let row = [], col = "";
+      for (let c = 0; c < str.length; c++) {
+          let cc = str[c], nc = str[c+1];
+          if (cc === '"' && quote && nc === '"') { col += '"'; c++; }
+          else if (cc === '"') { quote = !quote; }
+          else if (cc === ',' && !quote) { row.push(col.trim()); col = ""; }
+          else if (cc === '\n' && !quote) { row.push(col.trim()); arr.push(row); col = ""; row = []; }
+          else if (cc === '\r' && !quote) { /* ignore */ }
+          else { col += cc; }
+      }
+      if (col || row.length > 0) { row.push(col.trim()); arr.push(row); }
+      return arr;
+    }
+
+    async function syncAllFromGoogleSheets(force = false) {
+      const lastSync = localStorage.getItem('uai_last_sync_time'); const now = Date.now();
+      if (!force && lastSync && (now - Number(lastSync) < 24 * 60 * 60 * 1000) && DB_EQUIPOS.length > 0) {
+        document.getElementById('txt-last-sync').innerText = `Sincronizado hace ${Math.round((now - Number(lastSync)) / 3600000)} hs`; return;
+      }
       document.getElementById('txt-last-sync').innerText = "Descargando datos...";
+
       try {
         const responseEquipos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=EQUIPOS`);
         const dataEquipos = parseCSV(await responseEquipos.text());
+        
         const parsedEquipos = [];
         dataEquipos.forEach((row, idx) => {
           if (idx === 0 || !row || row.length < 2) return;
           const nom = row[1]; if (!nom) return;
+          const rawE = (row[5] || "").toLowerCase();
+          let est = "Disponible";
+          if (rawE.includes("mantenimiento") || rawE.includes("taller")) est = "Mantenimiento";
+          else if (rawE.includes("transito") || rawE.includes("alquilado") || rawE.includes("retirado")) est = "En transito";
+
           parsedEquipos.push({
-            id: row[0] || `EQ-${100+idx}`, nombre: nom, categoria: row[2] || "General",
-            descripcion_detallada: row[3] || "", precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0,
-            estado: (row[5] || "Disponible").trim()
+            id: row[0] || `EQ-${100+idx}`,
+            nombre: nom,
+            categoria: row[2] || "General",
+            descripcion_detallada: row[3] || "",
+            precio_usd: parseFloat((row[4] || "0").replace(/[^0-9.-]/g, "")) || 0,
+            estado: est
           });
         });
 
-        let parsedAlumnos = [];
+        const parsedAlumnos = [];
         try {
           const responseAlumnos = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=DATOS`);
           const dataAlumnos = parseCSV(await responseAlumnos.text());
@@ -619,13 +645,14 @@
           const responseReservas = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=RESERVAS`);
           const dataReservas = parseCSV(await responseReservas.text());
           dataReservas.forEach((row, idx) => {
-            if (idx === 0 || !row) return;
-            const sheetState = row[4];
+            if (idx === 0 || !row || row.length < 6) return;
             let jsonStr = row[5];
             if (jsonStr) {
               try {
                 if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) jsonStr = jsonStr.substring(1, jsonStr.length - 1);
+                jsonStr = jsonStr.replace(/""/g, '"');
                 const co = JSON.parse(jsonStr);
+                const sheetState = row[4];
                 if (sheetState === 'CERRADO') co.estado = 'Devuelto'; else co.estado = 'Activo';
                 parsedReservas.push(co);
               } catch(e) {}
@@ -633,18 +660,24 @@
           });
         } catch (e) {}
 
-        DB_EQUIPOS = parsedEquipos; 
-        DB_ALUMNOS = parsedAlumnos; 
+        DB_EQUIPOS = mergeInventoryState(parsedEquipos); 
+        DB_ALUMNOS = mergeAlumnosState(parsedAlumnos);
         DB_COMODATOS = parsedReservas;
 
-        extractAndRenderCategories(); renderKitsDropdown();
-        const now = new Date();
-        document.getElementById('txt-last-sync').innerText = "Sincronizado hoy " + now.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'});
-        showToast("Base de datos sincronizada", "success"); 
-        renderAll();
+        extractAndRenderCategories(); localStorage.setItem('uai_last_sync_time', now.toString()); document.getElementById('txt-last-sync').innerText = "Sincronizado ahora";
+        showToast("Inventario actualizado", "success"); persistData(); renderAll();
       } catch (err) {
         document.getElementById('txt-last-sync').innerText = "Error en sync"; showToast("Fallo conectando a Sheets", "error");
       }
+    }
+
+    function mergeInventoryState(newEquipos) {
+      if (DB_EQUIPOS.length === 0) return newEquipos;
+      return newEquipos.map(newEq => {
+        const oldEq = DB_EQUIPOS.find(o => o.id === newEq.id);
+        if (oldEq && oldEq.estado === 'En transito') newEq.estado = 'En transito';
+        return newEq;
+      });
     }
 
     function extractAndRenderCategories() {
@@ -658,24 +691,87 @@
         `<button onclick="filterInventoryCategory('Mantenimiento', 't-cat-maint')" id="t-cat-maint" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">En Mantenimiento</button>`;
     }
 
-    function renderKitsDropdown() {
-      const sel = document.getElementById('dispatch-kits-dropdown');
-      sel.innerHTML = '<option value="">-- Seleccionar Kit --</option>';
-      DB_KITS.forEach(k => sel.innerHTML += `<option value="${k.id}">${k.nombre} (${k.items.length} eq.)</option>`);
+    // ================== GESTIÓN DE KITS REDISEÑADA ==================
+    function renderKits() {
+      const container = document.getElementById('dispatch-kits-container');
+      if (!container) return;
+      container.innerHTML = '';
+      
+      if (DB_KITS.length === 0) {
+        container.innerHTML = '<p class="text-[11px] text-slate-400 italic py-2 col-span-full">No hay kits guardados. Seleccioná equipos y guardalos como kit.</p>';
+        return;
+      }
+
+      DB_KITS.forEach(k => {
+        const isSelected = selectedKits.includes(k.id);
+        const bgClass = isSelected ? 'bg-indigo-100 border-indigo-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100';
+        const btnClass = isSelected ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50';
+        const btnText = isSelected ? 'Quitar' : 'Agregar';
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border transition flex items-center justify-between ${bgClass}`;
+        card.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <div>
+              <h4 class="font-bold text-[11px] ${isSelected ? 'text-indigo-900' : 'text-slate-700'}">${k.nombre}</h4>
+              <p class="text-[9px] ${isSelected ? 'text-indigo-600' : 'text-slate-500'}">${k.items.length} equipos</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <button onclick="eliminarKit('${k.id}', event)" class="text-slate-400 hover:text-red-500 p-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            <button onclick="toggleKitSelection('${k.id}')" class="text-[10px] font-semibold px-2.5 py-1 rounded transition ${btnClass}">${btnText}</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleKitSelection(kitId) {
+      const kit = DB_KITS.find(k => k.id === kitId);
+      if (!kit) return;
+      const isSelected = selectedKits.includes(kitId);
+      
+      if (isSelected) {
+          selectedKits = selectedKits.filter(id => id !== kitId);
+          kit.items.forEach(kitItem => {
+              const existing = selectedItems.find(i => i.id === kitItem.id);
+              if (existing) {
+                  existing.qty -= kitItem.qty;
+                  if (existing.qty <= 0) {
+                      selectedItems = selectedItems.filter(i => i.id !== kitItem.id);
+                  }
+              }
+          });
+      } else {
+          selectedKits.push(kitId);
+          kit.items.forEach(kitItem => {
+              const existing = selectedItems.find(i => i.id === kitItem.id);
+              if (existing) existing.qty += kitItem.qty;
+              else selectedItems.push({ id: kitItem.id, qty: kitItem.qty });
+          });
+      }
+      renderKits();
+      renderDispatchInventory();
+      recalculateTotals();
     }
 
     function guardarKit() {
       if (selectedItems.length === 0) return showToast("Selecciona equipos primero para armar el kit.", "error");
-      const n = prompt("Nombre del Kit (Ej. Kit Entrevista):"); if (!n) return;
+      const n = prompt("Nombre del Kit (Ej. Kit Podcast):"); if (!n) return;
       DB_KITS.push({ id: 'K-'+Date.now(), nombre: n, items: JSON.parse(JSON.stringify(selectedItems)) });
-      localStorage.setItem('uai_kits', JSON.stringify(DB_KITS)); renderKitsDropdown(); showToast("Kit guardado", "success");
+      persistData(); renderKits(); showToast("Kit guardado", "success");
     }
 
-    function cargarKit() {
-      const v = document.getElementById('dispatch-kits-dropdown').value; if (!v) return;
-      const k = DB_KITS.find(x => x.id === v);
-      if (k) { selectedItems = JSON.parse(JSON.stringify(k.items)); renderDispatchInventory(); recalculateTotals(); showToast("Kit cargado", "info"); }
+    function eliminarKit(kitId, event) {
+        event.stopPropagation();
+        if (confirm("¿Estás seguro de eliminar este kit?")) {
+            DB_KITS = DB_KITS.filter(k => k.id !== kitId);
+            selectedKits = selectedKits.filter(id => id !== kitId);
+            persistData();
+            renderKits();
+        }
     }
+    // =================================================================
 
     function abrirEditarEquipo(id) {
       const eq = DB_EQUIPOS.find(e => e.id === id); if (!eq) return;
@@ -690,8 +786,15 @@
       const eq = DB_EQUIPOS.find(e => e.id === document.getElementById('edit-original-codigo').value);
       if (eq) {
         eq.id = document.getElementById('edit-codigo').value.trim(); eq.nombre = document.getElementById('edit-nombre').value.trim(); eq.categoria = document.getElementById('edit-categoria').value.trim(); eq.precio_usd = parseFloat(document.getElementById('edit-precio').value) || 0; eq.estado = document.getElementById('edit-estado').value; eq.descripcion_detallada = document.getElementById('edit-detalle').value.trim();
-        extractAndRenderCategories(); renderAll(); cerrarEditarEquipo(); showToast("Enviando a Sheets...", "info");
-        await sendToGoogleSheets({ action: "editEquipment", origCodigo: document.getElementById('edit-original-codigo').value, origNombre: document.getElementById('edit-original-nombre').value, codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada });
+        persistData(); extractAndRenderCategories(); renderAll(); cerrarEditarEquipo(); showToast("Enviando a Sheets...", "info");
+        
+        await sendToGoogleSheets({ 
+          action: "editEquipment", 
+          origCodigo: document.getElementById('edit-original-codigo').value, 
+          origNombre: document.getElementById('edit-original-nombre').value, 
+          codigo: eq.id, nombre: eq.nombre, categoria: eq.categoria, 
+          precio: eq.precio_usd, estado: eq.estado, detalle: eq.descripcion_detallada 
+        });
         showToast("Guardado completado.", "success");
       }
     }
@@ -729,12 +832,21 @@
 
     function changeQty(id, delta) {
       const it = selectedItems.find(i => i.id === id);
-      if (it) { it.qty += delta; if (it.qty < 1) it.qty = 1; renderDispatchInventory(); recalculateTotals(); }
+      if (it) { 
+        it.qty += delta; 
+        if (it.qty < 1) selectedItems = selectedItems.filter(i => i.id !== id); 
+        selectedKits = []; // Desvincular kits si hay edición manual
+        renderKits();
+        renderDispatchInventory(); 
+        recalculateTotals(); 
+      }
     }
 
     function toggleDispatchSelection(id) {
       const idx = selectedItems.findIndex(i => i.id === id);
       if (idx !== -1) selectedItems.splice(idx, 1); else selectedItems.push({ id, qty: 1 });
+      selectedKits = []; // Desvincular kits
+      renderKits();
       renderDispatchInventory(); recalculateTotals();
     }
 
@@ -802,8 +914,8 @@
 
     function filterAgenda(status) {
       activeAgendaFilter = status;
-      ['Todos', 'Activos', 'Pendientes', 'Devueltos'].forEach(b => document.getElementById(`tab-agenda-${b}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100");
-      document.getElementById(`tab-agenda-${status}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white";
+      ['Todos', 'Activos', 'Pendientes', 'Devueltos'].forEach(b => document.getElementById(`tab-agenda-${b}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition");
+      document.getElementById(`tab-agenda-${status}`).className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white transition";
       renderAgendaPanel();
     }
 
@@ -836,7 +948,7 @@
       for (let i = 0; i < pD; i++) grid.innerHTML += `<div class="h-14 bg-slate-50/50 rounded-lg border border-slate-100/40"></div>`;
       for (let dia = 1; dia <= dM; dia++) {
         const dFecha = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), dia);
-        const res = DB_COMODATOS.filter(co => co.estado === 'Activo' && dFecha >= new Date(co.fechaRetiroISO) && dFecha <= new Date(co.fechaDevolucionISO));
+        const res = DB_COMODATOS.filter(co => co.estado === 'Activo' && dFecha >= new Date(new Date(co.fechaRetiroISO).setHours(0,0,0,0)) && dFecha <= new Date(new Date(co.fechaDevolucionISO).setHours(23,59,59,999)));
         const col = res.length > 0 ? 'bg-amber-50 border-amber-300 hover:bg-amber-100 cursor-pointer' : 'bg-white border-slate-200 hover:border-slate-300 cursor-pointer';
         const celda = document.createElement('div'); celda.className = `h-14 p-1 rounded-lg border flex flex-col justify-between ${col}`;
         celda.innerHTML = `<span class="text-xs font-bold ${res.length > 0 ? 'text-amber-800' : 'text-slate-500'}">${dia}</span>${res.length > 0 ? `<span class="w-2 h-2 rounded-full bg-amber-500 self-end mb-1"></span>` : ''}`;
@@ -872,78 +984,125 @@
     function cerrarPreConfirmacion() { document.getElementById('modal-pre-confirmacion').classList.add('hidden'); }
     
     async function confirmarYEmitirComodato() {
-      if (!pendingLoanData) return;
-      let al = DB_ALUMNOS.find(a => a.dni === pendingLoanData.alumno.dni);
-      if (!al) { al = { ...pendingLoanData.alumno }; DB_ALUMNOS.push(al); } else { al.nombre = pendingLoanData.alumno.nombre; al.domicilio = pendingLoanData.alumno.domicilio; al.telefono = pendingLoanData.alumno.telefono; }
-      
-      await sendToGoogleSheets({ action: "saveStudent", dni: al.dni, name: al.nombre, address: al.domicilio, phone: al.telefono });
-      
-      const nCo = { id: `CO-${2600 + DB_COMODATOS.length}`, alumno: { ...al }, equipos: pendingLoanData.equipos.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd, qty: e.qty })), fechaRetiroISO: pendingLoanData.fechaRetiroISO, fechaDevolucionISO: pendingLoanData.fechaDevolucionISO, horas: pendingLoanData.horas, totalUSD: pendingLoanData.totalUSD, estado: 'Activo' };
-      DB_COMODATOS.push(nCo);
-      
-      pendingLoanData.equipos.forEach(async (e) => {
-        let eqB = DB_EQUIPOS.find(x => x.id === e.id);
-        if(eqB) {
-            eqB.estado = "En transito";
-            await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "En transito", detalle: e.descripcion_detallada });
-        }
-      });
+      try {
+        if (!pendingLoanData) return;
+        let al = DB_ALUMNOS.find(a => a.dni === pendingLoanData.alumno.dni);
+        if (!al) { al = { ...pendingLoanData.alumno }; DB_ALUMNOS.push(al); } 
+        else { al.nombre = pendingLoanData.alumno.nombre; al.domicilio = pendingLoanData.alumno.domicilio; al.telefono = pendingLoanData.alumno.telefono; }
+        
+        showToast("Registrando operación en el servidor...", "info");
+        await sendToGoogleSheets({ action: "saveStudent", dni: al.dni, name: al.nombre, address: al.domicilio, phone: al.telefono });
+        
+        const nCo = { id: `CO-${2600 + DB_COMODATOS.length}`, alumno: { ...al }, equipos: pendingLoanData.equipos.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd, qty: e.qty })), fechaRetiroISO: pendingLoanData.fechaRetiroISO, fechaDevolucionISO: pendingLoanData.fechaDevolucionISO, horas: pendingLoanData.horas, totalUSD: pendingLoanData.totalUSD, estado: 'Activo' };
+        DB_COMODATOS.push(nCo);
+        
+        const now = new Date();
+        const fR = new Date(nCo.fechaRetiroISO);
+        const fD = new Date(nCo.fechaDevolucionISO);
+        let estadoReserva = fR > now ? "A RETIRAR" : "EN TRANSITO";
+        const idAlumnoText = `${nCo.id} / ${nCo.alumno.nombre}`;
+        const eqText = nCo.equipos.map(e => `${e.qty}x ${e.nombre}`).join(', ');
+        const rangoText = `${fR.toLocaleDateString('es-AR')} al ${fD.toLocaleDateString('es-AR')}`;
 
-      selectedItems = []; persistData(); cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
+        await sendToGoogleSheets({ 
+            action: "saveReservation", id: nCo.id, idAlumno: idAlumnoText, 
+            equipos: eqText, rango: rangoText, garantia: `u$s ${nCo.totalUSD}`, 
+            estado: estadoReserva, payload: JSON.stringify(nCo) 
+        });
+
+        pendingLoanData.equipos.forEach(async (e) => {
+          let eqB = DB_EQUIPOS.find(x => x.id === e.id);
+          if(eqB) {
+              eqB.estado = "En transito";
+              await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "En transito", detalle: e.descripcion_detallada });
+          }
+        });
+
+        selectedItems = []; selectedKits = []; persistData(); cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
+      } catch (error) {
+          console.error(error);
+          showToast("Error emitiendo comodato: " + error.message, "error");
+      }
+    }
+
+    function verComodatoId(id) {
+      const co = DB_COMODATOS.find(c => c.id === id);
+      if (co) abrirVisorComodato(co);
     }
 
     function abrirVisorComodato(loan) {
-      const paper = document.getElementById('modal-paper-content'); const fR = new Date(loan.fechaRetiroISO);
-      
-      // Armamos la lista mapeando cantidades a texto de forma retroactiva y segura
-      const eqConcat = loan.equipos.map(e => {
-        const q = e.qty || 1;
-        const d = e.descripcion || e.desc || e.nombre || "";
-        return `${numToText(q)} (${q}) ${d.toUpperCase()}`;
-      }).join('; ') + ".-";
-      
-      paper.innerHTML = `
-        <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
-        <p class="mb-4 text-xs">Entre la <strong>Fundación Iberoamericana de Estudios Superiores</strong> (en adelante <strong>F.I.E.S.</strong>) con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra. <strong>${loan.alumno.nombre.toUpperCase()}</strong> con domicilio en <strong>${loan.alumno.domicilio.toUpperCase()}</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:</p>
-        <p class="mb-4 text-xs"><strong>PRIMERA:</strong> La F.I.E.S. entrega en comodato al alumno: <strong>${eqConcat}</strong>, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.---------------------------------------------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>SEGUNDA:</strong> Dichos equipos tienen un valor total de u$s <strong>${loan.totalUSD.toLocaleString('es-AR')}</strong>, el cual el alumno declara conocer y aceptar.--------------------------------------------------------------------------------------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>TERCERA:</strong> El comodato del equipo se realiza por el término de <strong>${loan.horas}</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.-------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>CUARTA:</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos ($&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>QUINTA:</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>SEXTA:</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------</p>
-        <p class="mb-4 text-xs"><strong>SÉPTIMA:</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------</p>
-        <p class="mb-8 text-xs">En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong>${fR.getDate()}</strong> días del mes de <strong>${["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][fR.getMonth()]}</strong> del 2026.</p>
-        <div class="grid grid-cols-2 gap-12 pt-16 text-center text-xs">
-          <div class="border-t border-slate-400 pt-2"><p class="font-bold">Firma del Alumno</p><p class="text-slate-500">DNI: ${loan.alumno.dni}</p></div>
-          <div class="border-t border-slate-400 pt-2"><p class="font-bold">Por F.I.E.S. / Pañol</p><p class="text-slate-500">Estudio Audiovisual UAI</p></div>
-        </div>
-      `;
-      
-      // Vinculamos el enlace de Google Calendar
-      document.getElementById('btn-add-calendar').href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Préstamo UAI: ${loan.alumno.nombre}`)}&dates=${new Date(loan.fechaRetiroISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}/${new Date(loan.fechaDevolucionISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(`Equipos Retirados:\n${loan.equipos.map(e => `- ${e.nombre}`).join('\n')}\n\nDomicilio Alumno: ${loan.alumno.domicilio}`)}&sf=true&output=xml`;
-      
-      // Vinculamos el disparador para guardar en PDF localmente
-      const btnPdf = document.getElementById('btn-download-pdf');
-      if(btnPdf) {
-        const fileNameStr = `${fR.toLocaleDateString('es-AR').replace(/\//g, '-')} - ${loan.alumno.nombre.toUpperCase()}.pdf`;
-        btnPdf.onclick = () => descargarPDF(fileNameStr);
+      try {
+        const paper = document.getElementById('modal-paper-content'); const fR = new Date(loan.fechaRetiroISO);
+        
+        const eqConcat = loan.equipos.map(e => {
+            const q = e.qty || 1;
+            const d = e.descripcion || e.desc || e.nombre || "";
+            return `${numToText(q)} (${q}) ${String(d).toUpperCase()}`;
+        }).join('; ') + ".-";
+        
+        paper.innerHTML = `
+          <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
+          <p class="mb-4 text-xs">Entre la <strong>Fundación Iberoamericana de Estudios Superiores</strong> (en adelante <strong>F.I.E.S.</strong>) con domicilio en Pellegrini 1816, por una parte y el/la Sr./Sra. <strong>${loan.alumno.nombre.toUpperCase()}</strong> con domicilio en <strong>${loan.alumno.domicilio.toUpperCase()}</strong> por la otra, este último en su carácter de alumno de la Universidad y correspondiente depósito en garantía, el cual se sujetará a las siguientes condiciones y cláusulas:</p>
+          <p class="mb-4 text-xs"><strong>PRIMERA:</strong> La F.I.E.S. entrega en comodato al alumno: <strong>${eqConcat}</strong>, destinados exclusivamente a la realización de tareas vinculadas con la carrera seguida.---------------------------------------------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>SEGUNDA:</strong> Dichos equipos tienen un valor total de u$s <strong>${loan.totalUSD.toLocaleString('es-AR')}</strong>, el cual el alumno declara conocer y aceptar.--------------------------------------------------------------------------------------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>TERCERA:</strong> El comodato del equipo se realiza por el término de <strong>${loan.horas}</strong> horas a partir de la firma del presente, obligándose el alumno a devolver el equipo en el mismo lugar donde lo retiró, en perfecto estado de conservación tal como le fuera entregado, haciéndose responsable por cualquier desperfecto o pérdida que pudiera haber sufrido, siempre y cuando dicha pérdida o desperfecto no estuviera cubierta por el seguro contratado a que hace referencia la cláusula cuarta del presente.-------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>CUARTA:</strong> Durante el período de vigencia del comodato el alumno entregará a la F.I.E.S. el importe de pesos ($&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;), en efectivo y a su entera satisfacción, el cual será aplicado a la contratación de un seguro con la empresa Surich Iguazú, Compañía de Seguros, en las condiciones que el alumno declara conocer notificándose en hoja anexa al presente de las mismas.--------------------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>QUINTA:</strong> El equipo solamente será entregado en comodato a los efectos de la realización de trabajos prácticos de la carrera que curse el alumno, por lo que de comprobarse un uso distinto la F.I.E.S. podrá suspender temporaria o definitivamente al alumno.------------------------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>SEXTA:</strong> En caso de atraso en la devolución del equipo se pacta una penalidad del 2% de su valor en forma diaria y acumulativa, teniéndose en cuenta para ello que al encontrarse los equipos destinados a la utilización de todos los alumnos que así lo necesiten, dicha suma se destinará a reparar los perjuicios que pudieran sufrirse.----------------------------------------------------------------------------------------------------------</p>
+          <p class="mb-4 text-xs"><strong>SÉPTIMA:</strong> El alumno declara haber inspeccionado el equipo en forma previa a su retiro, presentando conformidad con su perfecto estado de uso y conservación.--------------------------------------------------------</p>
+          <p class="mb-8 text-xs">En prueba de conformidad se firman dos ejemplares de un mismo tenor y a un solo efecto, en la Ciudad de Rosario a los <strong>${fR.getDate()}</strong> días del mes de <strong>${["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][fR.getMonth()]}</strong> del 2026.</p>
+          <div class="grid grid-cols-2 gap-12 pt-16 text-center text-xs">
+            <div class="border-t border-slate-400 pt-2"><p class="font-bold">Firma del Alumno</p><p class="text-slate-500">DNI: ${loan.alumno.dni}</p></div>
+            <div class="border-t border-slate-400 pt-2"><p class="font-bold">Por F.I.E.S. / Pañol</p><p class="text-slate-500">Estudio Audiovisual UAI</p></div>
+          </div>
+        `;
+        
+        const btnCal = document.getElementById('btn-add-calendar');
+        if (btnCal) {
+            btnCal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Préstamo UAI: ${loan.alumno.nombre}`)}&dates=${new Date(loan.fechaRetiroISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}/${new Date(loan.fechaDevolucionISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(`Equipos Retirados:\n${loan.equipos.map(e => `- ${e.nombre}`).join('\n')}\n\nDomicilio Alumno: ${loan.alumno.domicilio}`)}&sf=true&output=xml`;
+        }
+
+        const btnPdf = document.getElementById('btn-download-pdf');
+        if (btnPdf) {
+            const fileNameStr = `${fR.toLocaleDateString('es-AR').replace(/\//g, '-')} - ${String(loan.alumno.nombre).toUpperCase()}.pdf`;
+            btnPdf.onclick = () => descargarPDF(fileNameStr, paper.innerHTML);
+        }
+
+        document.getElementById('modal-comodato').classList.remove('hidden');
+      } catch (err) {
+          console.error(err);
+          showToast("Error generando visor: " + err.message, "error");
       }
-      
-      document.getElementById('modal-comodato').classList.remove('hidden');
     }
 
-    function descargarPDF(filename) {
-      const element = document.getElementById('modal-paper-content');
+    function descargarPDF(filename, htmlContent) {
+      if (typeof html2pdf === 'undefined') {
+          showToast("La librería PDF no cargó. Revisa tu conexión a internet.", "error");
+          return;
+      }
+      
+      const container = document.createElement('div');
+      container.innerHTML = htmlContent;
+      container.style.padding = '20mm';
+      container.style.backgroundColor = '#ffffff';
+      container.style.color = '#000000';
+      container.style.fontFamily = "'Merriweather', serif";
+      container.style.fontSize = "11pt";
+      container.style.lineHeight = "1.6";
+      
       const opt = {
-        margin:       15,
+        margin:       0,
         filename:     filename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
+        image:        { type: 'jpeg', quality: 1 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      showToast("Generando PDF, por favor espera un momento...", "info");
-      html2pdf().set(opt).from(element).save().then(() => {
-        showToast("PDF guardado con éxito.", "success");
+      
+      showToast("Generando archivo PDF...", "info");
+      html2pdf().set(opt).from(container).save().then(() => {
+        showToast("Documento guardado con éxito.", "success");
+      }).catch(err => {
+        showToast("Error al exportar PDF.", "error");
       });
     }
     
@@ -951,9 +1110,7 @@
       const co = DB_COMODATOS.find(c => c.id === id); if (!co) return;
       openConfirmModal(`¿Deseas registrar la devolución de equipos para el Comodato ${co.id}?`, () => {
         co.estado = 'Devuelto';
-
         sendToGoogleSheets({ action: "updateReservationState", id: co.id, estado: "CERRADO" });
-
         co.equipos.forEach(async (e) => {
             let eqB = DB_EQUIPOS.find(x => x.id === e.id);
             if(eqB) {
@@ -961,12 +1118,17 @@
                 await sendToGoogleSheets({ action: "editEquipment", origCodigo: eqB.id, codigo: eqB.id, nombre: eqB.nombre, categoria: eqB.categoria, precio: eqB.precio_usd, estado: "Disponible", detalle: eqB.descripcion_detallada });
             }
         });
-        showToast("Devolución registrada correctamente", "success"); renderAll();
+        persistData(); showToast("Devolución registrada correctamente", "success"); renderAll();
       });
     }
 
     function cerrarVisorComodato() { document.getElementById('modal-comodato').classList.add('hidden'); }
-    function imprimirComodatoDesdeModal() { document.getElementById('print-area').innerHTML = document.getElementById('modal-paper-content').innerHTML; window.print(); }
+    
+    function imprimirComodatoDesdeModal() { 
+        const contentHtml = document.getElementById('modal-paper-content').innerHTML;
+        document.getElementById('print-area').innerHTML = contentHtml; 
+        window.print(); 
+    }
 
     function openConfirmModal(text, onConfirm) { document.getElementById('confirm-text').innerText = text; document.getElementById('modal-confirm').classList.remove('hidden'); confirmCallback = onConfirm; }
     function closeConfirmModal(accepted) { document.getElementById('modal-confirm').classList.add('hidden'); if (accepted && confirmCallback) confirmCallback(); confirmCallback = null; }
@@ -981,6 +1143,36 @@
       setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 50);
       setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-1'); setTimeout(() => toast.remove(), 300); }, 4000);
     }
+
+    // REGISTRO GLOBAL DE SEGURIDAD (Evita problemas de contexto en llamadas inline en HTML)
+    window.switchTab = switchTab;
+    window.forzarSincronizacion = forzarSincronizacion;
+    window.buscarAlumnoPorDNI = buscarAlumnoPorDNI;
+    window.calcularFechasPrestamo = calcularFechasPrestamo;
+    window.renderDispatchInventory = renderDispatchInventory;
+    window.toggleKitSelection = toggleKitSelection;
+    window.eliminarKit = eliminarKit;
+    window.guardarKit = guardarKit;
+    window.previsualizarComodato = previsualizarComodato;
+    window.cerrarPreConfirmacion = cerrarPreConfirmacion;
+    window.confirmarYEmitirComodato = confirmarYEmitirComodato;
+    window.verComodatoId = verComodatoId;
+    window.descargarPDF = descargarPDF;
+    window.cerrarVisorComodato = cerrarVisorComodato;
+    window.imprimirComodatoDesdeModal = imprimirComodatoDesdeModal;
+    window.toggleSidebar = toggleSidebar;
+    window.closeConfirmModal = closeConfirmModal;
+    window.devolverComodato = devolverComodato;
+    window.cambiarMes = cambiarMes;
+    window.filterInventoryCategory = filterInventoryCategory;
+    window.renderInventoryPanel = renderInventoryPanel;
+    window.renderAlumnosPanel = renderAlumnosPanel;
+    window.filterAgenda = filterAgenda;
+    window.changeQty = changeQty;
+    window.toggleDispatchSelection = toggleDispatchSelection;
+    window.abrirEditarEquipo = abrirEditarEquipo;
+    window.cerrarEditarEquipo = cerrarEditarEquipo;
+    window.guardarEdicionEquipo = guardarEdicionEquipo;
   </script>
 </body>
 </html>
