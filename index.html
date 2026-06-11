@@ -26,6 +26,8 @@
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
+  <!-- Librería para generar el PDF de forma local -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
@@ -347,12 +349,24 @@
       <div class="flex-1 overflow-y-auto p-8 bg-slate-100">
         <div class="bg-white shadow-md rounded-lg max-w-2xl mx-auto p-12 print-font text-xs text-justify text-slate-800 leading-relaxed border border-slate-200" id="modal-paper-content"></div>
       </div>
-      <div class="bg-slate-50 border-t border-slate-200 px-8 py-4 flex justify-end space-x-3">
-        <button onclick="cerrarVisorComodato()" class="px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition">Cerrar</button>
-        <button onclick="imprimirComodatoDesdeModal()" class="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-          <span>Imprimir A4</span>
-        </button>
+      <div class="bg-slate-50 border-t border-slate-200 px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <a id="btn-add-calendar" target="_blank" href="#" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs px-4 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition duration-150">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <span>Añadir a Google Calendar</span>
+        </a>
+        <div class="flex space-x-3 w-full sm:w-auto">
+          <button onclick="cerrarVisorComodato()" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition duration-150">
+            Cerrar
+          </button>
+          <button id="btn-download-pdf" class="w-1/2 sm:w-auto bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg flex items-center justify-center space-x-1.5 transition duration-150">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>Descargar PDF</span>
+          </button>
+          <button onclick="imprimirComodatoDesdeModal()" class="w-1/2 sm:w-auto bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg shadow-red-500/10 flex items-center justify-center space-x-1.5 transition duration-150">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            <span>Imprimir A4</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -867,42 +881,26 @@
       const nCo = { id: `CO-${2600 + DB_COMODATOS.length}`, alumno: { ...al }, equipos: pendingLoanData.equipos.map(e => ({ id: e.id, nombre: e.nombre, descripcion: e.descripcion_detallada, usd: e.precio_usd, qty: e.qty })), fechaRetiroISO: pendingLoanData.fechaRetiroISO, fechaDevolucionISO: pendingLoanData.fechaDevolucionISO, horas: pendingLoanData.horas, totalUSD: pendingLoanData.totalUSD, estado: 'Activo' };
       DB_COMODATOS.push(nCo);
       
-      const now = new Date();
-      const fR = new Date(nCo.fechaRetiroISO);
-      const fD = new Date(nCo.fechaDevolucionISO);
-      let estadoReserva = fR > now ? "A RETIRAR" : "EN TRANSITO";
-      
-      const idAlumnoText = `${nCo.id} / ${nCo.alumno.nombre}`;
-      const eqText = nCo.equipos.map(e => `${e.qty}x ${e.nombre}`).join(', ');
-      const rangoText = `${fR.toLocaleDateString('es-AR')} al ${fD.toLocaleDateString('es-AR')}`;
-      
-      await sendToGoogleSheets({ 
-        action: "saveReservation", 
-        id: nCo.id, 
-        idAlumno: idAlumnoText, 
-        equipos: eqText, 
-        rango: rangoText, 
-        garantia: `u$s ${nCo.totalUSD}`, 
-        estado: estadoReserva, 
-        payload: JSON.stringify(nCo) 
-      });
-
       pendingLoanData.equipos.forEach(async (e) => {
         let eqB = DB_EQUIPOS.find(x => x.id === e.id);
         if(eqB) {
             eqB.estado = "En transito";
-            await sendToGoogleSheets({ action: "editEquipment", origCodigo: eqB.id, codigo: eqB.id, nombre: eqB.nombre, categoria: eqB.categoria, precio: eqB.precio_usd, estado: "En transito", detalle: eqB.descripcion_detallada });
+            await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "En transito", detalle: e.descripcion_detallada });
         }
       });
 
-      selectedItems = []; cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
+      selectedItems = []; persistData(); cerrarPreConfirmacion(); abrirVisorComodato(nCo); renderAll();
     }
 
     function abrirVisorComodato(loan) {
       const paper = document.getElementById('modal-paper-content'); const fR = new Date(loan.fechaRetiroISO);
       
-      // Armamos la lista mapeando cantidades a texto, usando UNICAMENTE el Detalle en Comodato (sin el nombre principal del equipo)
-      const eqConcat = loan.equipos.map(e => `${numToText(e.qty)} (${e.qty}) ${e.descripcion.toUpperCase()}`).join('; ') + ".-";
+      // Armamos la lista mapeando cantidades a texto de forma retroactiva y segura
+      const eqConcat = loan.equipos.map(e => {
+        const q = e.qty || 1;
+        const d = e.descripcion || e.desc || e.nombre || "";
+        return `${numToText(q)} (${q}) ${d.toUpperCase()}`;
+      }).join('; ') + ".-";
       
       paper.innerHTML = `
         <div class="text-center font-bold text-sm underline mb-6 uppercase">Convenio de Recepción y Depósito</div>
@@ -920,7 +918,33 @@
           <div class="border-t border-slate-400 pt-2"><p class="font-bold">Por F.I.E.S. / Pañol</p><p class="text-slate-500">Estudio Audiovisual UAI</p></div>
         </div>
       `;
+      
+      // Vinculamos el enlace de Google Calendar
+      document.getElementById('btn-add-calendar').href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Préstamo UAI: ${loan.alumno.nombre}`)}&dates=${new Date(loan.fechaRetiroISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}/${new Date(loan.fechaDevolucionISO).toISOString().replace(/-|:|\.\d\d\d/g, "")}&details=${encodeURIComponent(`Equipos Retirados:\n${loan.equipos.map(e => `- ${e.nombre}`).join('\n')}\n\nDomicilio Alumno: ${loan.alumno.domicilio}`)}&sf=true&output=xml`;
+      
+      // Vinculamos el disparador para guardar en PDF localmente
+      const btnPdf = document.getElementById('btn-download-pdf');
+      if(btnPdf) {
+        const fileNameStr = `${fR.toLocaleDateString('es-AR').replace(/\//g, '-')} - ${loan.alumno.nombre.toUpperCase()}.pdf`;
+        btnPdf.onclick = () => descargarPDF(fileNameStr);
+      }
+      
       document.getElementById('modal-comodato').classList.remove('hidden');
+    }
+
+    function descargarPDF(filename) {
+      const element = document.getElementById('modal-paper-content');
+      const opt = {
+        margin:       15,
+        filename:     filename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      showToast("Generando PDF, por favor espera un momento...", "info");
+      html2pdf().set(opt).from(element).save().then(() => {
+        showToast("PDF guardado con éxito.", "success");
+      });
     }
     
     function devolverComodato(id) {
