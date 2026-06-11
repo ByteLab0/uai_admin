@@ -891,7 +891,7 @@
         let eqB = DB_EQUIPOS.find(x => x.id === e.id);
         if(eqB) {
             eqB.estado = "En transito";
-            await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "En transito", detalle: e.descripcion_detallada });
+            await sendToGoogleSheets({ action: "editEquipment", origCodigo: eqB.id, codigo: eqB.id, nombre: eqB.nombre, categoria: eqB.categoria, precio: eqB.precio_usd, estado: "En transito", detalle: eqB.descripcion_detallada });
         }
       });
 
@@ -934,7 +934,7 @@
             let eqB = DB_EQUIPOS.find(x => x.id === e.id);
             if(eqB) {
                 eqB.estado = "Disponible";
-                await sendToGoogleSheets({ action: "editEquipment", origCodigo: e.id, codigo: e.id, nombre: e.nombre, categoria: e.categoria, precio: e.precio_usd, estado: "Disponible", detalle: e.descripcion_detallada });
+                await sendToGoogleSheets({ action: "editEquipment", origCodigo: eqB.id, codigo: eqB.id, nombre: eqB.nombre, categoria: eqB.categoria, precio: eqB.precio_usd, estado: "Disponible", detalle: eqB.descripcion_detallada });
             }
         });
         showToast("Devolución registrada correctamente", "success"); renderAll();
